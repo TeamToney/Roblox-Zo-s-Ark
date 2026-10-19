@@ -20,7 +20,7 @@ local function copy(value: any): any
 end
 local function fixture(temporary: boolean?)
 	local records: {[string]: any} = {}
-	local db: any = {calls = 0, failures = 0}
+	local db: any = {calls = 0, failures = 0, opens = 0}
 	function db.UpdateAsync(self: any, key: string, transform: any)
 		self.calls += 1
 		if self.failures > 0 then self.failures -= 1; error("injected service failure") end
@@ -30,7 +30,12 @@ local function fixture(temporary: boolean?)
 	end
 	local now, tokens = 1800000000, 0
 	local adapter: any = {
-		store = db, temporary = temporary == true,
+		temporary = temporary == true,
+		openStore = function(name: string)
+			equal(name, Config.DataStoreName)
+			db.opens += 1
+			return db
+		end,
 		now = function() return now end,
 		clock = function() return now end,
 		sleep = function(seconds: number) now += seconds end,
@@ -42,6 +47,7 @@ end
 
 test("a new live journal is atomically created with a lease", function()
 	local f = fixture(); local session = assert(f.store:load(1))
+	equal(f.db.opens, 1)
 	equal(session.data.coins, 100); equal(f.records.u_1.schema, Config.SchemaVersion)
 	equal(f.records.u_1.lease.token, session.token)
 	equal(f.records.u_1.lease.expires, f.adapter.now() + Config.LeaseSeconds)
@@ -114,8 +120,26 @@ end)
 test("temporary Studio journals never read or write the persistent store", function()
 	local f = fixture(true); local session = assert(f.store:load(1))
 	session.data.coins = 1000; assert(f.store:save(session, false)); assert(f.store:save(session, true))
-	equal(f.db.calls, 0); equal(f.records.u_1, nil)
+	equal(f.db.opens, 0); equal(f.db.calls, 0); equal(f.records.u_1, nil)
 	local nextSession = assert(f.store:load(1)); equal(nextSession.data.coins, 100)
+end)
+test("temporary journals work when opening the online store would throw", function()
+	local f = fixture(true)
+	f.adapter.openStore = function() error("Publish this place before accessing DataStore") end
+	local store = ProfileStore.new(Rules, Config, f.adapter)
+	local session = assert(store:load(1))
+	equal(session.temporary, true); equal(session.data.coins, 100)
+	session.data.coins = 200
+	assert(store:save(session, false)); assert(store:save(session, true))
+	equal(f.db.opens, 0); equal(f.db.calls, 0)
+	equal(assert(store:load(1)).data.coins, 100)
+end)
+test("live store acquisition failures do not fall back to temporary journals", function()
+	local f = fixture(true)
+	f.adapter.temporary = false
+	f.adapter.openStore = function() error("Online store unavailable") end
+	local ok = pcall(function() ProfileStore.new(Rules, Config, f.adapter) end)
+	equal(ok, false); equal(f.db.calls, 0)
 end)
 test("a release waits for an in-flight save and then writes final progress", function()
 	local f = fixture(); local session = assert(f.store:load(1)); session.data.coins = 555

@@ -9,7 +9,7 @@ local Rules = require(Shared.Rules).new(Catalog, Config)
 local World = require(script.Parent.World)
 local Wildlife = require(script.Parent.Wildlife)
 local Store = require(script.Parent.ProfileStore).new(Rules, Config, {
-	store = game:GetService("DataStoreService"):GetDataStore(Config.DataStoreName),
+	openStore = function(name) return game:GetService("DataStoreService"):GetDataStore(name) end,
 	temporary = RunService:IsStudio() and workspace:GetAttribute("ZoUseLiveDataInStudio") ~= true,
 	newToken = function() return game:GetService("HttpService"):GenerateGUID(false) end,
 	now = os.time, clock = os.clock, sleep = task.wait, warn = warn,

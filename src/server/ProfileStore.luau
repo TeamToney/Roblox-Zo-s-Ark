@@ -24,10 +24,14 @@ end
 -- Services are injected so ownership and failure handling can be fault-tested
 -- without pretending to run the Roblox engine or its live DataStore service.
 function ProfileStore.new(rules, config, adapter)
+	-- Unpublished Studio files cannot acquire a DataStore. Temporary journals
+	-- must skip acquisition itself, as well as every persistent read and write.
+	local store
+	if not adapter.temporary then store = adapter.openStore(config.DataStoreName) end
 	return setmetatable({
 		rules = rules,
 		config = config,
-		store = adapter.store, adapter = adapter,
+		store = store, adapter = adapter,
 		temporary = adapter.temporary,
 	}, ProfileStore)
 end

@@ -10,7 +10,7 @@ The map suite checks image orientation, doorway gaps, the atrium polygon, aligne
 
 ## Studio checklist — still requires execution
 
-Open the generated place in Studio and use a fresh Play session. The UI should say `SESSION`; the world is created when the server starts. Check Server and Client Output for errors.
+Open the generated place in Studio and use a fresh Play session. The UI should say `SESSION`; the world is created when the server starts. Check Server and Client Output for errors. Test an unpublished local file with Studio API access disabled: temporary journals must start without even acquiring a DataStore. The injected service tests cover this isolation; the real Studio startup still requires verification.
 
 - Spawn and respawn safely in the southern entrance, including the first Play session when characters can load before procedural world creation. Reach Meadow Courtyard, the lower gallery and every habitat. Walk around the pointed Atrium and enter its north doorway to reach Ark Outfitters. Check wall/door collision and camera obstruction.
 - Close/reopen every panel, scroll the journal/store, resize the window, test phone and tablet emulation, and verify touch prompts. Check keyboard, controller selection, movement, and UI navigation with an actual controller before claiming controller support.
