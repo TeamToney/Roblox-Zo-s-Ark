@@ -1,0 +1,17 @@
+{
+  "platform": "Linux x86_64",
+  "assets": [
+    {
+      "name": "rojo-7.7.1-linux-x86_64.zip",
+      "url": "https://github.com/rojo-rbx/rojo/releases/download/v7.7.1/rojo-7.7.1-linux-x86_64.zip",
+      "sha256": "00feb4fa0829a1dd72b49df2639da519a352bfe13cadcd83969e2ba2bb5693c4",
+      "executables": ["rojo"]
+    },
+    {
+      "name": "luau-0.742-ubuntu.zip",
+      "url": "https://github.com/luau-lang/luau/releases/download/0.742/luau-ubuntu.zip",
+      "sha256": "152058b98c60ff1f5b5ec9bca0b8eb37793cae161dd3a05608cc3d8738ba1a4d",
+      "executables": ["luau", "luau-analyze", "luau-compile", "luau-ast"]
+    }
+  ]
+}

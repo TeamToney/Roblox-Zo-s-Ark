@@ -1,0 +1,13 @@
+ZO'S ARK - OPEN THIS GAME IN ROBLOX STUDIO
+
+1. Save ZosArk-Map1.rbxl onto your Windows PC using Download raw file on GitHub.
+2. In Studio, stop the current test with the red Stop button.
+3. In Studio press Ctrl+O (File > Open from File).
+4. Select ZosArk-Map1.rbxl from your Downloads folder (or wherever you saved it).
+5. Press F5 / Play.
+
+The edit-mode scene can look empty because the world is built when Play starts.
+The game should show the ZO'S ARK interface and the southern entrance.
+A grassland scene with Roblox's WELCOME sign is the starter place, not this game.
+
+Studio uses temporary test data by default. Nothing is published by opening it.

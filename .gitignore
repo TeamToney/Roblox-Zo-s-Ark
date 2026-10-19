@@ -1,0 +1,11 @@
+build/
+.tools/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+!downloads/ZosArk-Map1.rbxl
+__pycache__/
+*.pyc
+*.log
+.DS_Store

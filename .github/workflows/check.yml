@@ -1,0 +1,17 @@
+name: Zo's Ark checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  rules-and-place:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install verified, pinned Roblox CLI tools
+        run: bash scripts/bootstrap.sh
+      - name: Check game rules and build place
+        run: bash scripts/check.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZosArk-place
+          path: build/ZosArk.rbxlx

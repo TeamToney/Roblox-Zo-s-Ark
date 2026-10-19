@@ -1,0 +1,25 @@
+--!strict
+-- All live economy values and world limits live here. Units are Roblox studs.
+return table.freeze({
+	SchemaVersion = 1,
+	StartingCoins = 100,
+	BaseCapacity = 24,
+	CaptureDistance = 19,
+	ShopDistance = 36,
+	CaptureCooldown = 2.5,
+	DistanceStep = 500,
+	DistanceCoins = 25,
+	DistancePoints = 15,
+	MaxTravelPerSecond = 45,
+	MaxWorldRadius = 820,
+	BoatSpeed = 30,
+	EventPeriod = 1800,
+	EventDuration = 480,
+	EventGoal = 3,
+	EventCoins = 350,
+	EventPoints = 250,
+	EventTitle = "Aurora Voyager",
+	AutosaveSeconds = 60,
+	LeaseSeconds = 240,
+	DataStoreName = "ZosArk_Profiles_v1",
+})

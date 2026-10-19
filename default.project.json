@@ -1,0 +1,30 @@
+{
+  "name": "Zo's Ark",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "ZoShared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "ZoServer": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "$properties": { "CharacterWalkSpeed": 18 },
+      "StarterPlayerScripts": { "ZoClient": { "$path": "src/client" } }
+    },
+    "Workspace": {
+      "$properties": { "FilteringEnabled": true, "StreamingEnabled": true },
+      "$ignoreUnknownInstances": true
+    },
+    "Lighting": {
+      "$properties": {
+        "ClockTime": 14.5,
+        "Brightness": 2.5,
+        "Ambient": [0.36, 0.43, 0.5],
+        "OutdoorAmbient": [0.6, 0.66, 0.68],
+        "GlobalShadows": true
+      }
+    },
+    "SoundService": { "$properties": { "RespectFilteringEnabled": true } }
+  }
+}
