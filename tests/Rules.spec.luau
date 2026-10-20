@@ -224,5 +224,69 @@ test("a long mixed session preserves currency and inventory invariants", functio
 	end
 end)
 
+test("walking pays exactly once at every ten steps", function()
+	local p = Rules.blank(now)
+	for _ = 1, 9 do equal(Rules.movement(p, "walk", 3, 0.25), 0) end
+	equal(Rules.movement(p, "walk", 3, 0.25), 1)
+	equal(p.coins, 102); equal(p.points, 1); equal(p.stats.walkDistance, 30)
+	equal(Rules.movement(p, "walk", 3, 0.25), 0); equal(p.coins, 102)
+end)
+test("ten swimming strokes pay independently of walking progress", function()
+	local p = Rules.blank(now); p.stats.walkDistance = 27
+	for _ = 1, 9 do equal(Rules.movement(p, "swim", 4, 0.5), 0) end
+	equal(Rules.movement(p, "swim", 4, 0.5), 1)
+	equal(p.coins, 103); equal(p.points, 2); equal(p.stats.walkDistance, 27)
+	equal(Rules.movement(p, "walk", 3, 0.25), 1); equal(p.coins, 105)
+end)
+test("movement bonuses retain fractional strides across sample boundaries", function()
+	local p = Rules.blank(now)
+	Rules.movement(p, "walk", 23.5, 1); Rules.movement(p, "walk", 6.25, 0.5)
+	equal(p.coins, 100); equal(Rules.movement(p, "walk", 0.25, 0.25), 1)
+	equal(p.stats.walkDistance, 30); equal(p.coins, 102)
+end)
+test("plausible ticks crossing multiple step thresholds pay every threshold", function()
+	local p = Rules.blank(now); p.stats.walkDistance = 29
+	equal(Rules.movement(p, "walk", 44, 2), 2)
+	equal(p.coins, 104); equal(p.points, 2)
+end)
+test("boats, airtime, idle jitter and invalid movement samples pay nothing", function()
+	local p = Rules.blank(now)
+	for _, mode in {"boat", "air", "", "run"} do equal(Rules.movement(p, mode, 20, 1), 0) end
+	for _, pair in {{0, 1}, {0.1, 1}, {-1, 1}, {100, 1}, {3, 0}, {3, -1}, {3, 3}, {0 / 0, 1}, {3, 0 / 0}, {math.huge, 1}} do
+		equal(Rules.movement(p, "walk", pair[1], pair[2]), 0)
+	end
+	equal(p.coins, 100); equal(p.points, 0); equal(p.stats.walkDistance, 0)
+end)
+test("swimming has a lower speed limit than walking", function()
+	local p = Rules.blank(now)
+	equal(Rules.movement(p, "swim", 20, 1), 0); equal(p.stats.swimDistance, 0)
+	Rules.movement(p, "walk", 20, 1); equal(p.stats.walkDistance, 20)
+end)
+test("existing version-one journals gain movement defaults without losing progress", function()
+	local p = Rules.sanitize({coins = 777, points = 123, inventory = {fox = 2}, stats = {distance = 512.5, catches = 5}, owned = {snorkel = true}}, now)
+	equal(p.coins, 777); equal(p.inventory.fox, 2); equal(p.stats.distance, 512.5)
+	equal(p.stats.walkDistance, 0); equal(p.stats.swimDistance, 0); equal(p.owned.snorkel, true)
+end)
+test("reconnecting preserves partial progress without duplicating paid bonuses", function()
+	local p = Rules.blank(now); p.stats.walkDistance = 29.75; p.stats.swimDistance = 39.5
+	local restored = Rules.sanitize(p, now)
+	equal(Rules.movement(restored, "walk", 0.25, 0.25), 1)
+	equal(Rules.movement(restored, "swim", 0.5, 0.25), 1)
+	local again = Rules.sanitize(restored, now)
+	equal(Rules.movement(again, "walk", 0.25, 0.25), 0)
+	equal(Rules.movement(again, "swim", 0.5, 0.25), 0)
+	equal(again.coins, 105); equal(again.points, 3)
+end)
+test("life jackets are permanent upgrades with ordinary purchase protection", function()
+	local p = Rules.blank(now); p.coins = 1000
+	assert(Rules.buy(p, "lifeJacket")); equal(p.coins, 720)
+	equal(Rules.buy(p, "lifeJacket"), false); equal(p.coins, 720)
+	equal(Rules.sanitize(p, now).owned.lifeJacket, true)
+end)
+test("new movement rewards coexist with the five-hundred-stud exploration bonus", function()
+	local p = Rules.blank(now)
+	for _ = 1, 50 do Rules.movement(p, "walk", 10, 1); Rules.travel(p, 10, 1, now) end
+	equal(p.coins, 100 + 16 * 2 + 25); equal(p.points, 16 + 15)
+end)
 print(string.format("\n%d passed, %d failed", passed, failed))
 if failed > 0 then error("Zo's Ark domain checks failed") end

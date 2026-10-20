@@ -11,6 +11,14 @@ Layout.Source = {name = "MAP 1.jpeg", width = 1530, height = 1632, pivotX = 765,
 Layout.Bounds = {55, 60, 1490, 1610} :: Rect
 Layout.FloorY = 10
 Layout.WaterY = 2
+Layout.SeabedY = -58
+-- Outer shore stairs descend from the campus to swimming depth.
+Layout.ShoreExits = {
+	{x = 500, y = 60, dx = 0, dy = -1},
+	{x = 550, y = 1610, dx = 0, dy = 1},
+	{x = 55, y = 900, dx = -1, dy = 0},
+	{x = 1490, y = 1200, dx = 1, dy = 0},
+}
 Layout.WallHeight = 8
 Layout.WallThickness = 1.2
 Layout.Hub = {814, 700}

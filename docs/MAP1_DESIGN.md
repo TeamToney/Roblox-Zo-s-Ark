@@ -33,6 +33,7 @@ Small partitions are consolidated where needed for movement and animal encounter
 - `MapLayout.luau` defines rooms, door openings, corridors, courtyards, habitat rectangles, water cutouts, spawn, hub, boarding transitions and boats in source-image coordinates.
 - `MapGeometry.luau` converts coordinates and supplies the same wall segments and foundation cutouts to the world builder, chart and structural checks.
 - `PlanWorld.luau` generates the roofless 3D campus at server start. Foundation pieces leave the marine pools and sea gate open for Terrain water.
+- Dry foundation columns now extend below `SeabedY` and meet a continuous rock seabed. They block swimming beneath the island without closing the marine cutouts. `ShoreExits` adds four stairways on the outer north, south, east and west edges, shown as EXIT on the in-game chart. Recovery pickups are scattered in water around these exits and the marine habitats.
 - `World.luau` samples wildlife with body clearance inside each habitat. Movement checks stop simple roaming paths from crossing walls, and captures require a clear server-checked view.
 - The chart preserves proportions and draws the actual trace, with numbered habitats, the entrance, Ark hub and live player marker. Imported Studio maps use their own marker positions instead.
 

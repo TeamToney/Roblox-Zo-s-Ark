@@ -1,6 +1,7 @@
 --!nonstrict
 local RunService = game:GetService("RunService")
 local World = require(script.Parent.World)
+local AnimalModels = require(script.Parent.AnimalModels)
 
 local Wildlife = {}
 Wildlife.__index = Wildlife
@@ -33,50 +34,7 @@ function Wildlife:spawn(zone, id)
 	local root = self.world.part(model, "AnimalRoot", Vector3.one, CFrame.new(position + Vector3.new(0, if zone.marine then 0 else scale * 1.7, 0)), Color3.new())
 	root.Transparency = 1; root.CanCollide = false; root.CanQuery = false
 	model.PrimaryPart = root
-	local color = Color3.fromRGB(unpack(species.color))
-	local cream = Color3.fromRGB(245, 232, 204)
-	local dark = Color3.fromRGB(32, 46, 52)
-	local function piece(name, size, offset, tint, shape)
-		local p = self.world.part(model, name, size * scale, root.CFrame * CFrame.new(offset * scale), tint or color, Enum.Material.SmoothPlastic, shape or Enum.PartType.Ball)
-		p.CanCollide = false; p.CanQuery = false
-		return p
-	end
-	local marine = zone.marine
-	local form = species.form
-	if marine then
-		piece("Body", Vector3.new(2.5, 1.7, 4.8), Vector3.zero)
-		piece("Head", Vector3.new(2, 1.5, 2), Vector3.new(0, 0.1, -2), color)
-		piece("Tail", Vector3.new(3.6, 0.35, 1.8), Vector3.new(0, 0.1, 2.6))
-		for side = -1, 1, 2 do piece("Flipper", Vector3.new(2, 0.25, 2), Vector3.new(side * 1.6, -0.3, 0.2)) end
-		if form == "turtle" then
-			piece("Shell", Vector3.new(3.1, 1.5, 3.8), Vector3.new(0, 0.6, 0), Color3.fromRGB(44, 105, 87))
-		elseif form == "ray" then
-			piece("MantaWings", Vector3.new(7.5, 0.5, 3), Vector3.zero)
-			piece("MantaTail", Vector3.new(0.22, 0.22, 5), Vector3.new(0, 0, 4))
-		elseif form ~= "fish" then
-			piece("DorsalFin", Vector3.new(0.3, 1.5, 1.7), Vector3.new(0, 1, 0.6))
-		end
-	else
-		piece("Body", Vector3.new(2.3, 2, 3.2), Vector3.zero)
-		piece("Head", Vector3.new(1.8, 1.8, 1.8), Vector3.new(0, 0.6, -1.8))
-		piece("Muzzle", Vector3.new(1.1, 0.7, 0.8), Vector3.new(0, 0.2, -2.55), cream)
-		for side = -1, 1, 2 do
-			for _, z in {-0.9, 1} do piece("Leg", Vector3.new(0.55, 1.6, 0.65), Vector3.new(side * 0.7, -1, z)) end
-			piece("Ear", Vector3.new(0.55, if form == "rabbit" then 2.4 else 0.8, 0.5), Vector3.new(side * 0.55, if form == "rabbit" then 2.1 else 1.65, -1.8))
-		end
-		piece("Tail", Vector3.new(0.7, 0.7, if form == "rabbit" then 0.7 else 2.4), Vector3.new(0, 0.2, 2), if form == "fox" then cream else color)
-		if form == "bird" then
-			for side = -1, 1, 2 do piece("Wing", Vector3.new(3.5, 0.35, 1.8), Vector3.new(side * 1.6, 0.2, 0), Color3.fromRGB(61, 131, 175)) end
-			piece("Beak", Vector3.new(0.7, 0.6, 1), Vector3.new(0, 0.6, -2.8), Color3.fromRGB(250, 197, 85))
-		elseif form == "goat" or form == "deer" then
-			for side = -1, 1, 2 do piece("Horn", Vector3.new(0.28, 1.7, 0.3), Vector3.new(side * 0.65, 2.1, -1.5), cream) end
-		elseif form == "cat" then
-			for index = 1, 8 do
-				piece("Spot", Vector3.new(0.35, 0.35, 0.55), Vector3.new(if index % 2 == 0 then 1.05 else -1.05, 0.35, (index % 4) * 0.7 - 1), dark)
-			end
-		end
-	end
-	for side = -1, 1, 2 do piece("Eye", Vector3.new(0.25, 0.25, 0.25), Vector3.new(side * 0.68, if marine then 0.5 else 0.85, -2.5), dark) end
+	local rig = AnimalModels.build(self.world, model, root, species)
 	local title = self.world.label(root, species.name .. "\n" .. species.rarity .. " • Tier " .. species.tier, 4 * scale, 240)
 	title.TextColor3 = Color3.fromRGB(unpack(self.catalog.Rarities[species.rarity].color))
 	local prompt = Instance.new("ProximityPrompt")
@@ -84,7 +42,7 @@ function Wildlife:spawn(zone, id)
 	prompt.MaxActivationDistance = 15; prompt.HoldDuration = 0.65
 	prompt.RequiresLineOfSight = true; prompt.Parent = root
 	model:SetAttribute("SpeciesId", id); model.Parent = self.world.actors
-	local record = {model = model, root = root, zone = zone, id = id, alive = true, busy = false, position = root.Position, origin = root.Position, target = root.Position, movedAt = os.clock(), nextMove = os.clock() + self.random:NextNumber(3, 7), yaw = self.random:NextNumber(0, math.pi * 2)}
+	local record = {model = model, root = root, rig = rig, zone = zone, id = id, alive = true, busy = false, position = root.Position, origin = root.Position, target = root.Position, movedAt = os.clock(), nextMove = os.clock() + self.random:NextNumber(3, 7), yaw = self.random:NextNumber(0, math.pi * 2)}
 	self.records[model] = record
 	prompt.Triggered:Connect(function(player)
 		if not record.alive or record.busy then return end
@@ -146,6 +104,7 @@ function Wildlife:start()
 			end
 			record.position = record.origin:Lerp(record.target, math.clamp((now - record.movedAt) / 5, 0, 1))
 			model:PivotTo(CFrame.new(record.position + Vector3.new(0, math.sin(now * 1.8) * 0.12, 0)) * CFrame.Angles(0, record.yaw, 0))
+			AnimalModels.animate(record.rig, record.root.CFrame, now, (record.target - record.origin).Magnitude > 0.5 and now - record.movedAt < 5, record.zone.marine)
 		end
 	end)
 end

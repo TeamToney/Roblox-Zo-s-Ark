@@ -72,6 +72,14 @@ function Geometry.distanceToSegment(x: number, y: number, segment: Segment): num
 	local t = math.clamp(((x - segment[1]) * dx + (y - segment[2]) * dy) / (dx * dx + dy * dy), 0, 1)
 	return math.sqrt((x - segment[1] - dx * t) ^ 2 + (y - segment[2] - dy * t) ^ 2)
 end
+function Geometry.foundationColumns(layout: any): {{rect: {number}, top: number, bottom: number}}
+	assert(layout.SeabedY < layout.WaterY and layout.WaterY < layout.FloorY, "Invalid island water/ground heights")
+	local columns = {}
+	for _, rect in Geometry.floorTiles(layout) do
+		table.insert(columns, {rect = rect, top = layout.FloorY, bottom = layout.SeabedY - 4})
+	end
+	return columns
+end
 function Geometry.scanline(polygon: {{number}}, y: number): {number}
 	local intersections = {}
 	for index, a in polygon do

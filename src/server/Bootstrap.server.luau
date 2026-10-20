@@ -8,6 +8,7 @@ local Catalog = require(Shared.Catalog)
 local Rules = require(Shared.Rules).new(Catalog, Config)
 local World = require(script.Parent.World)
 local Wildlife = require(script.Parent.Wildlife)
+local WaterSafety = require(script.Parent.WaterSafety)
 local Store = require(script.Parent.ProfileStore).new(Rules, Config, {
 	openStore = function(name) return game:GetService("DataStoreService"):GetDataStore(name) end,
 	temporary = RunService:IsStudio() and workspace:GetAttribute("ZoUseLiveDataInStudio") ~= true,
@@ -21,6 +22,7 @@ local changed = Instance.new("RemoteEvent"); changed.Name = "Changed"; changed.P
 local boatInput = Instance.new("RemoteEvent"); boatInput.Name = "BoatInput"; boatInput.Parent = remotes
 local world = World.build(Config)
 local sessions, positions, buckets, captureTimes, loading = {}, {}, {}, {}, {}
+local waterSafety
 local closing = false
 local preview = RunService:IsStudio() and workspace:GetAttribute("ZoPreviewEvent") ~= false
 
@@ -40,12 +42,32 @@ local function snapshot(player)
 	local session = sessions[player]
 	if not session or session.closed or session.lost then return nil end
 	Rules.refresh(session.data, os.time())
-	return {profile = session.data, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, serverTime = os.time()}
+	return {profile = session.data, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
 end
 
 local function push(player, message, kind)
 	if player.Parent == Players then changed:FireClient(player, {state = snapshot(player), message = message, kind = kind}) end
 end
+
+waterSafety = WaterSafety.new(world, Config, function(player)
+	local session = sessions[player]
+	return if session and not session.lost and not session.closed then session.data.owned else nil
+end, function(player, mode, distance, elapsed)
+	local session = sessions[player]
+	if not session or session.lost or session.closed or closing then return end
+	local awards = Rules.movement(session.data, mode, distance, elapsed)
+	local character = player.Character
+	if character then
+		character:SetAttribute("ZoSteps", math.floor(session.data.stats.walkDistance / Config.StepStuds))
+		character:SetAttribute("ZoStrokes", math.floor(session.data.stats.swimDistance / Config.StrokeStuds))
+	end
+	if awards > 0 then
+		local swimming = mode == "swim"
+		local coins = awards * (if swimming then Config.SwimBonusCoins else Config.WalkBonusCoins)
+		local points = awards * (if swimming then Config.SwimBonusPoints else Config.WalkBonusPoints)
+		push(player, (if swimming then "Swimming" else "Walking") .. " bonus! +" .. coins .. " coins • +" .. points .. " Ark Points", "success")
+	end
+end, push)
 
 local function allow(player)
 	local now = os.clock()
@@ -134,6 +156,7 @@ for _, player in Players:GetPlayers() do task.spawn(join, player) end
 Players.PlayerRemoving:Connect(function(player)
 	local session = sessions[player]
 	sessions[player] = nil; positions[player] = nil; buckets[player] = nil; captureTimes[player] = nil
+	waterSafety:remove(player)
 	if session then Store:save(session, true) end
 end)
 
@@ -190,6 +213,7 @@ game:BindToClose(function()
 end)
 
 World.startBoats(world, boatInput)
+waterSafety:start()
 Wildlife.new(world, Catalog, Rules, capture, preview):start()
 workspace:SetAttribute("ZoReady", true)
 print("[Zo's Ark] World ready. " .. (if Store.temporary then "Studio session data only." else "Live profile saving enabled."))

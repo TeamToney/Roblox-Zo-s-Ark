@@ -10,4 +10,10 @@ The edit-mode scene can look empty because the world is built when Play starts.
 The game should show the ZO'S ARK interface and the southern entrance.
 A grassland scene with Roblox's WELCOME sign is the starter place, not this game.
 
+WATER SURVIVAL UPDATE
+Look for the SWIM ENDURANCE / HP bar and step/stroke counters above navigation.
+Swimming starts with 30 seconds of endurance. Visit the store for water gear.
+Orange life rings and green first-aid floats help you stay in the water longer.
+The chart's four EXIT markers lead to shore stairs. Animal models are updated.
+
 Studio uses temporary test data by default. Nothing is published by opening it.

@@ -34,8 +34,14 @@ function PlanWorld.build(world, part, label)
 	workspace.Terrain.WaterColor = Color3.fromRGB(41, 149, 164)
 	workspace.Terrain.WaterTransparency = 0.4
 	workspace.Terrain.WaterWaveSize = 0.12; workspace.Terrain.WaterWaveSpeed = 7
-	workspace.Terrain:FillBlock(CFrame.new(0, waterY - 30, 0), Vector3.new(1900, 60, 1900), Enum.Material.Water)
-	for _, tile in Geometry.floorTiles(Layout) do plate(map, "CampusGround", tile, Layout.FloorY, 8, palette.ground, Enum.Material.Grass) end
+	local waterDepth = waterY - Layout.SeabedY
+	workspace.Terrain:FillBlock(CFrame.new(0, Layout.SeabedY - 6, 0), Vector3.new(1900, 12, 1900), Enum.Material.Rock)
+	workspace.Terrain:FillBlock(CFrame.new(0, waterY - waterDepth / 2, 0), Vector3.new(1900, waterDepth, 1900), Enum.Material.Water)
+	-- Extrude only dry tiles through the entire water column. The lagoon and
+	-- sea gate remain open; no water-filled tunnel exists below the island.
+	for _, column in Geometry.foundationColumns(Layout) do
+		plate(map, "IslandBedrock", column.rect, column.top, column.top - column.bottom, palette.ground, Enum.Material.Grass)
+	end
 	plate(map, "LagoonBasin", Layout.WaterCuts[1], waterY - 17, 3, palette.navy, Enum.Material.Slate)
 
 	for _, rect in Layout.Corridors do
@@ -118,12 +124,25 @@ function PlanWorld.build(world, part, label)
 	end
 	steps(Layout.DockRamp, floorY, dockY, 8)
 	steps(Layout.SwimSteps, dockY, waterY - 1, 10)
+	for _, exit in Layout.ShoreExits do
+		local center = point(exit.x, exit.y)
+		local outward = Vector3.new(exit.dx, 0, exit.dy)
+		local cf = CFrame.lookAt(center, center + outward)
+		for index = 1, 16 do
+			local top = floorY - (floorY - waterY + 1) * index / 16
+			local position = center + outward * ((index - 0.5) * 1.5)
+			part(map, "ShoreExitStep", Vector3.new(12, 1, 1.5), CFrame.new(position.X, top - 0.5, position.Z) * cf.Rotation, palette.wood, Enum.Material.WoodPlanks)
+		end
+		local sign = part(map, "ShoreExitSign", Vector3.new(1, 4, 1), CFrame.new(center - outward * 4 + Vector3.new(0, 2, 0)), palette.mint)
+		label(sign, "SHORE EXIT\nRest on land to recover", 6, 250)
+	end
 	for _, boat in Layout.Boats do table.insert(world.boatSpawns, CFrame.new(point(boat[1], boat[2], waterY + 1.2))) end
 	local dockSign = part(map, "DockSign", Vector3.one, CFrame.new(point(1305, 548, floorY + 2)), palette.navy)
 	label(dockSign, "EXPEDITION DOCK\nUse the steps • free boats • east to sea", 5, 300)
 	world.hub = point(Layout.Hub[1], Layout.Hub[2], floorY + 0.1)
 	world.spawn = CFrame.new(point(Layout.Spawn[1], Layout.Spawn[2], floorY + 3))
 	world.sourceLayout = Layout
+	world.waterY = waterY
 	return map
 end
 return PlanWorld

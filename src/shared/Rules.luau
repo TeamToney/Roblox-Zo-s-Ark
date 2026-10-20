@@ -3,7 +3,7 @@
 export type Profile = {
 	coins: number, points: number, inventory: {[string]: number}, owned: {[string]: boolean},
 	discovered: {[string]: boolean}, titles: {[string]: boolean}, bait: number,
-	stats: {catches: number, rare: number, distance: number, traded: number},
+	stats: {catches: number, rare: number, distance: number, traded: number, walkDistance: number, swimDistance: number},
 	daily: {day: number, catches: number, rare: number, distance: number, claimed: {[string]: boolean}},
 	event: {id: number, captures: number, claimed: boolean},
 }
@@ -29,7 +29,7 @@ function Rules.new(catalog: any, config: any)
 	function api.blank(now: number): Profile
 		return {
 			coins = config.StartingCoins, points = 0, inventory = {}, owned = {}, discovered = {}, titles = {}, bait = 0,
-			stats = {catches = 0, rare = 0, distance = 0, traded = 0},
+			stats = {catches = 0, rare = 0, distance = 0, traded = 0, walkDistance = 0, swimDistance = 0},
 			daily = {day = math.floor(now / 86400), catches = 0, rare = 0, distance = 0, claimed = {}},
 			event = {id = -2, captures = 0, claimed = false},
 		}
@@ -56,6 +56,14 @@ function Rules.new(catalog: any, config: any)
 		if type(raw.titles) == "table" and raw.titles[config.EventTitle] == true then p.titles[config.EventTitle] = true end
 		if type(raw.stats) == "table" then
 			for key in p.stats :: any do (p.stats :: any)[key] = integer(raw.stats[key], 0) end
+			-- Additive fields default to zero for existing v1 journals. Preserve
+			-- fractional strides so reconnecting neither duplicates nor loses bonuses.
+			for _, key in {"walkDistance", "swimDistance", "distance"} do
+				local value = raw.stats[key]
+				if type(value) == "number" and value == value and math.abs(value) < math.huge then
+					(p.stats :: any)[key] = math.clamp(value, 0, 1000000000)
+				end
+			end
 		end
 		if type(raw.daily) == "table" and raw.daily.day == p.daily.day then
 			for _, key in {"catches", "rare", "distance"} do
@@ -154,6 +162,25 @@ function Rules.new(catalog: any, config: any)
 		p.coins += milestones * config.DistanceCoins
 		p.points += milestones * config.DistancePoints
 		return milestones > 0
+	end
+	-- Steps/strokes are estimated from verified server displacement, never a
+	-- client-supplied counter. Boats, airborne movement and teleports are excluded
+	-- by the server sampler as well as these mode/speed/interval checks.
+	function api.movement(p: Profile, mode: string, distance: number, elapsed: number): number
+		if mode ~= "walk" and mode ~= "swim" then return 0 end
+		local swimming = mode == "swim"
+		local speed = if swimming then config.MaxSwimPerSecond else config.MaxWalkPerSecond
+		if distance ~= distance or distance < 0.15 or distance == math.huge or elapsed ~= elapsed or elapsed <= 0 or elapsed > 2 or distance > speed * elapsed then return 0 end
+		local key = if swimming then "swimDistance" else "walkDistance"
+		local stride = if swimming then config.StrokeStuds else config.StepStuds
+		local stats: any = p.stats
+		local before = stats[key]
+		local after = math.min(1000000000, before + distance)
+		stats[key] = after
+		local awards = math.floor(after / (stride * config.MovementBonusEvery)) - math.floor(before / (stride * config.MovementBonusEvery))
+		p.coins += awards * (if swimming then config.SwimBonusCoins else config.WalkBonusCoins)
+		p.points += awards * (if swimming then config.SwimBonusPoints else config.WalkBonusPoints)
+		return awards
 	end
 	function api.claim(p: Profile, id: string, now: number, preview: boolean?): (boolean, string)
 		api.refresh(p, now)

@@ -106,5 +106,25 @@ test("boarding transitions join the pool, low dock and ground", function()
 	assert(Layout.FloorY > Layout.WaterY)
 	assert((Layout.DockRamp[4] - Layout.DockRamp[2]) * Layout.Source.scale > 4)
 end)
+test("dry-land foundation columns extend through the seabed without closing water routes", function()
+	local columns = Geometry.foundationColumns(Layout)
+	equal(#columns, #Geometry.floorTiles(Layout))
+	for _, column in columns do
+		assert(column.top == Layout.FloorY and column.bottom < Layout.SeabedY)
+		local x, y = Geometry.center(column.rect)
+		equal(Geometry.inWater(Layout, x, y), false)
+		for _, boat in Layout.Boats do equal(Geometry.contains(column.rect, boat[1], boat[2]), false) end
+		equal(Geometry.contains(column.rect, Layout.SeaGate[1], Layout.SeaGate[2]), false)
+	end
+end)
+test("four shore exits lie on the parcel edge and descend outward into water", function()
+	equal(#Layout.ShoreExits, 4)
+	for _, exit in Layout.ShoreExits do
+		equal(math.abs(exit.dx) + math.abs(exit.dy), 1)
+		assert(Geometry.contains(Layout.Bounds, exit.x, exit.y))
+		equal(Geometry.inWater(Layout, exit.x - exit.dx * 5, exit.y - exit.dy * 5), false)
+		equal(Geometry.inWater(Layout, exit.x + exit.dx * 20, exit.y + exit.dy * 20), true)
+	end
+end)
 print(string.format("\n%d map-geometry cases passed, %d failed", passed, failed))
 if failed > 0 then error("Zo's Ark map geometry checks failed") end

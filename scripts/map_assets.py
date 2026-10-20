@@ -146,6 +146,13 @@ def render_svg(data):
     rect(layout["Dock"], "#bd965f")
     rect(layout["DockRamp"], "#e6bd7c")
     rect(layout["SwimSteps"], "#c6d9c5", 'opacity=".7"')
+    for exit in layout["ShoreExits"]:
+        x, y, dx, dy = exit["x"], exit["y"], exit["dx"], exit["dy"]
+        out.append(f'<line x1="{x}" y1="{y}" x2="{x+dx*40}" y2="{y+dy*40}" stroke="#d6bd8b" stroke-width="20"/>')
+        for i in range(1, 17):
+            sx, sy = x + dx * i * 2.5, y + dy * i * 2.5
+            out.append(f'<line x1="{sx-dy*10}" y1="{sy+dx*10}" x2="{sx+dy*10}" y2="{sy-dx*10}" stroke="#526c60" stroke-width="1"/>')
+        out.append(f'<circle cx="{x}" cy="{y}" r="10" fill="#a0e2be"/><text x="{x+18}" y="{y+8}" fill="#eff4cf" font-size="18">EXIT</text>')
     for ax, ay, bx, by in data["walls"]:
         out.append(f'<line x1="{ax}" y1="{ay}" x2="{bx}" y2="{by}" stroke="#233e42" stroke-width="5" stroke-linecap="square"/>')
     for i, zone in enumerate(layout["Zones"], 1):

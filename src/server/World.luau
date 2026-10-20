@@ -14,11 +14,11 @@ local C = {
 }
 
 local function part(parent, name, size, cf, color, material, shape)
-	local p = Instance.new("Part")
+	local p = Instance.new(if shape == "wedge" then "WedgePart" else "Part")
 	p.Name = name; p.Size = size; p.CFrame = cf; p.Color = color
 	p.Anchored = true; p.Material = material or Enum.Material.SmoothPlastic
 	p.TopSurface = Enum.SurfaceType.Smooth; p.BottomSurface = Enum.SurfaceType.Smooth
-	if shape then p.Shape = shape end
+	if shape and shape ~= "wedge" then p.Shape = shape end
 	p.Parent = parent
 	return p
 end
@@ -121,7 +121,7 @@ function World.sample(self, zone, random, scale)
 		end
 		if position then
 			local root = position + Vector3.new(0, if zone.marine then 0 else scale * 1.7, 0)
-			if #workspace:GetPartBoundsInBox(CFrame.new(root), Vector3.new(6, 3, 8) * scale, overlap) == 0 then return position end
+			if #workspace:GetPartBoundsInBox(CFrame.new(root), Vector3.new(9, 3, 9) * scale, overlap) == 0 then return position end
 		end
 	end
 	return nil
@@ -132,7 +132,22 @@ function World.canRoam(self, origin, target, scale)
 	if delta.Magnitude < 0.01 then return true end
 	local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = {self.actors, self.boats}; params.IgnoreWater = true
-	return workspace:Blockcast(CFrame.new(origin), Vector3.new(6, 3, 8) * scale, delta, params) == nil
+	return workspace:Blockcast(CFrame.new(origin), Vector3.new(9, 3, 9) * scale, delta, params) == nil
+end
+
+function World.inWater(position)
+	-- Check actual server Terrain, including imported maps. A swimming state
+	-- reported by a client is insufficient to award strokes or bypass fatigue.
+	local region = Region3.new(position - Vector3.new(0.5, 2, 0.5), position + Vector3.new(0.5, 0.1, 0.5)):ExpandToGrid(4)
+	local materials, occupancy = workspace.Terrain:ReadVoxels(region, 4)
+	for x = 1, materials.Size.X do
+		for y = 1, materials.Size.Y do
+			for z = 1, materials.Size.Z do
+				if materials[x][y][z] == Enum.Material.Water and occupancy[x][y][z] > 0.25 then return true end
+			end
+		end
+	end
+	return false
 end
 
 function World.startBoats(self, inputEvent)

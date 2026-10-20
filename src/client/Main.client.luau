@@ -86,10 +86,16 @@ local nav = make("Frame", {BackgroundColor3 = palette.ink, BorderSizePixel = 0, 
 corner(nav, 14)
 local tabs = {{"journal", "Journal"}, {"store", "Store"}, {"challenges", "Challenges"}, {"map", "Chart"}, {"guide", "Guide"}}
 local navButtons = {}
+local survival = make("Frame", {BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -98), Size = UDim2.fromOffset(650, 48)}, gui)
+corner(survival, 10)
+local survivalText = text(survival, "SWIM ENDURANCE", 12, palette.mint, UDim2.fromOffset(12, 1), UDim2.new(1, -24, 0, 23), true)
+local movementText = text(survival, "Every 10 steps or strokes earns a bonus", 10, palette.muted, UDim2.fromOffset(12, 23), UDim2.new(1, -24, 0, 17))
+local enduranceTrack = make("Frame", {BackgroundColor3 = palette.soft, BorderSizePixel = 0, Position = UDim2.new(0, 12, 1, -6), Size = UDim2.new(1, -24, 0, 3)}, survival)
+local enduranceFill = make("Frame", {BackgroundColor3 = palette.mint, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1)}, enduranceTrack)
 local location = text(gui, "", 12, palette.cream, UDim2.new(0.5, -220, 1, -88), UDim2.fromOffset(440, 20), true)
 location.TextXAlignment = Enum.TextXAlignment.Center
 location.TextStrokeTransparency = 0.4
-local toast = make("Frame", {Visible = false, BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -110), Size = UDim2.fromOffset(580, 56), ZIndex = 10}, gui)
+local toast = make("Frame", {Visible = false, BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -166), Size = UDim2.fromOffset(580, 56), ZIndex = 10}, gui)
 corner(toast, 12)
 local toastText = text(toast, "", 14, palette.cream, UDim2.fromOffset(14, 0), UDim2.new(1, -28, 1, 0), true)
 toastText.ZIndex = 11
@@ -249,6 +255,9 @@ local function chart()
 		end
 		local hx, hz = Geometry.world(Layout.Source, Layout.Hub[1], Layout.Hub[2]); site("ARK", hx, hz, palette.gold)
 		local sx, sz = Geometry.world(Layout.Source, Layout.Spawn[1], Layout.Spawn[2]); site("START", sx, sz, palette.cream)
+		for _, exit in Layout.ShoreExits do
+			local ex, ez = Geometry.world(Layout.Source, exit.x, exit.y); site("EXIT", ex, ez, palette.mint)
+		end
 	else
 		description.Text = "Your imported world • Coral dot: you. Markers: habitats and the Ark."
 		if mapInfo then
@@ -264,7 +273,7 @@ local function chart()
 		local legend = {}
 		for index, zone in Layout.Zones do table.insert(legend, index .. "  /  " .. zone.name) end
 		section("Find your next discovery", table.concat(legend, "\n"), 216)
-		section("From the base to the open sea", "Enter the pointed Ark Atrium from its north side for gear and trades. Tidewater Hall is in the northeast. Its southern pool has boarding steps; boats leave through the eastern sea gate. You are the coral dot.", 144)
+		section("From the base to the open sea", "Enter the pointed Ark Atrium from its north side for gear and trades. Tidewater Hall has southern boarding steps and an eastern sea gate. Four EXIT markers show stairs back onto the island. You are the coral dot.", 144)
 	else
 		section("Explore your world", "You are the coral dot. Follow the markers to habitats, the Ark station and your map's expedition dock. Boats return after 45 seconds without occupants.", 126)
 	end
@@ -280,7 +289,9 @@ local function guide()
 	section("03  /  Prepare an expedition", "Buy the Ranger Net for larger animals. A Reef Snorkel opens more sea encounters. Permanent equipment is used automatically; no item equipping is required.", 126)
 	section("04  /  Sail beyond the base", if hybrid then "Tidewater Hall is in the northeast. Descend the boarding steps in its southern pool to reach a free boat, then sail through the eastern sea gate. Swim or sail close to marine animals." else "Find your world's expedition dock and borrow a free boat. Sit to steer and jump to leave. Swim or sail close to marine animals to rescue them.", 148)
 	section("05  /  Follow the Aurora Tide", "An eight-minute event returns every thirty minutes. Rescue three Aurora Mantas at the reef, then claim a special title and bonus rewards on the expedition board.", 126)
-	section("Make every journey count", "Travel 500 studs for a coin and point bonus. Finish daily challenges for more rewards. There is no player combat, no paid random rewards, and every capture uses nonlethal rescue gear.", 140)
+	section("Swim safely", "Start with 30 seconds of endurance. A snorkel gives 60s; the diving kit gives 180s. A life jacket adds 60s to either. Rest on land or in a boat to recover. At zero endurance, health drains: look for marked shore steps, orange life rings and green first-aid floats.", 176)
+	section("Water recovery pickups", "Life rings restore 15s and pause fatigue for 20s. First-aid floats restore 25 health and 20s of endurance. Hold their nearby prompt while swimming. Used pickups return after 90 seconds.", 144)
+	section("Make every journey count", "Every 10 walking steps earns 2 coins + 1 Ark Point. Every 10 swimming strokes earns 3 coins + 2 points. Boats earn distance milestones, not step or stroke bonuses. The 500-stud exploration reward and daily challenges still apply.", 152)
 	if state.temporary then section("Studio playtest", "This session uses a temporary journal. Coins and discoveries reset when the test server stops.", 100) end
 end
 
@@ -321,12 +332,17 @@ local function resize()
 	local camera = workspace.CurrentCamera
 	if not camera then return end
 	local viewport = camera.ViewportSize
-	panel.Size = UDim2.fromOffset(math.min(690, viewport.X - 24), math.max(138, math.min(530, viewport.Y - 218)))
+	local short = viewport.Y < 500
+	tide.Visible = not short
+	panel.Position = UDim2.new(0.5, 0, 0, if short then 76 else 122)
+	panel.Size = UDim2.fromOffset(math.min(690, viewport.X - 24), math.max(110, math.min(530, viewport.Y - (if short then 242 else 288))))
 	nav.Size = UDim2.fromOffset(math.min(650, viewport.X - 24), 48)
+	survival.Size = UDim2.fromOffset(math.min(650, viewport.X - 24), 48)
 	toast.Size = UDim2.fromOffset(math.min(580, viewport.X - 28), 62)
 	location.Size = UDim2.fromOffset(math.min(440, viewport.X - 24), 20)
 	location.Position = UDim2.new(0.5, -math.min(440, viewport.X - 24) / 2, 1, -88)
 	local compact = viewport.X < 560
+	survivalText.TextSize = if compact then 10 else 12
 	brand.TextSize = if compact then 18 else 23
 	subtitle.TextSize = if compact then 8 else 10
 	subtitle.Size = UDim2.fromOffset(if compact then 140 else 240, 18)
@@ -393,6 +409,24 @@ RunService.RenderStepped:Connect(function(dt)
 		tideText.TextColor3 = if state.event.active then palette.mint else palette.muted
 	end
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if character and humanoid then
+		local maximum = character:GetAttribute("ZoSwimMaximum") or (state and state.safety and state.safety.maximum) or Config.SwimSeconds
+		local remaining = character:GetAttribute("ZoSwimRemaining") or maximum
+		local floating = character:GetAttribute("ZoSwimFloating") or 0
+		local swimming = character:GetAttribute("ZoSwimming") == true
+		local warning = swimming and remaining <= 10 and floating <= 0
+		local compact = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X < 560
+		local caption = if floating > 0 then "FLOATING " .. math.ceil(floating) .. "s" elseif swimming and remaining <= 0 then "EXHAUSTED" elseif swimming then "SWIMMING" else "SWIM ENDURANCE"
+		survivalText.Text = caption .. "  •  " .. math.ceil(remaining) .. "/" .. maximum .. "s  •  HP " .. math.ceil(humanoid.Health)
+		survivalText.TextColor3 = if warning then palette.coral else palette.mint
+		enduranceFill.Size = UDim2.fromScale(math.clamp(remaining / maximum, 0, 1), 1)
+		enduranceFill.BackgroundColor3 = if warning then palette.coral else palette.mint
+		local steps = character:GetAttribute("ZoSteps") or (state and math.floor(state.profile.stats.walkDistance / Config.StepStuds)) or 0
+		local strokes = character:GetAttribute("ZoStrokes") or (state and math.floor(state.profile.stats.swimDistance / Config.StrokeStuds)) or 0
+		movementText.Text = if compact then "STEPS " .. steps % 10 .. "/10  •  STROKES " .. strokes % 10 .. "/10" else "STEPS " .. steps % 10 .. "/10 (+2 coins, +1 pt)  •  STROKES " .. strokes % 10 .. "/10 (+3 coins, +2 pts)"
+	end
 	local station = ReplicatedStorage:FindFirstChild("ZoShopPosition")
 	if root and station then
 		local distance = (root.Position - station.Value).Magnitude

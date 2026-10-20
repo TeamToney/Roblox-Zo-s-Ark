@@ -36,14 +36,15 @@ Catalog.Species = {
 Catalog.SpeciesOrder = {"rabbit", "fox", "deer", "monkey", "parrot", "jaguar", "goat", "eagle", "snowLeopard", "reefFish", "seaTurtle", "dolphin", "whale", "auroraRay"}
 Catalog.Items = {
 	rangerNet = {name = "Ranger Net", price = 180, description = "Tier 2 • deer, birds, turtles and better odds", kind = "net", tier = 2},
-	snorkel = {name = "Reef Snorkel", price = 220, description = "Handle turtles, dolphins and event mantas", kind = "access"},
+	snorkel = {name = "Reef Snorkel", price = 220, description = "60s swim endurance; handle turtles, dolphins and mantas", kind = "access"},
+	lifeJacket = {name = "Expedition Life Jacket", price = 280, description = "+60s swim endurance; combines with your water gear", kind = "access"},
 	expeditionNet = {name = "Expedition Net", price = 650, description = "Tier 3 • big cats, dolphins and rare events", kind = "net", tier = 3},
 	tranquilizer = {name = "Rescue Tranquilizer", price = 1800, description = "Tier 4 • nonlethal capture of apex wildlife", kind = "net", tier = 4},
-	diving = {name = "Deepwater Kit", price = 1100, description = "Unlock whale handling; includes snorkel access", kind = "access"},
+	diving = {name = "Deepwater Kit", price = 1100, description = "180s swim endurance; whales and snorkel access", kind = "access"},
 	fieldPack = {name = "Expedition Pack", price = 400, description = "Carry 48 animals before returning to the Ark", kind = "capacity", capacity = 48},
 	bait = {name = "Calming Bait ×5", price = 70, description = "+15% capture chance; one used per valid attempt", kind = "consumable"},
 } :: {[string]: Item}
-Catalog.ItemOrder = {"rangerNet", "snorkel", "expeditionNet", "fieldPack", "tranquilizer", "diving", "bait"}
+Catalog.ItemOrder = {"rangerNet", "snorkel", "lifeJacket", "expeditionNet", "fieldPack", "tranquilizer", "diving", "bait"}
 Catalog.Challenges = {
 	catches = {name = "Wildlife Watch", description = "Catch 8 animals", goal = 8, coins = 150, points = 100},
 	distance = {name = "Over the Horizon", description = "Travel 1,200 studs", goal = 1200, coins = 125, points = 90},

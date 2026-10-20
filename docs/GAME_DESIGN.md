@@ -10,9 +10,15 @@ The player starts with 100 coins, Tier 1 rescue gear, and 24 inventory spaces. C
 
 Coins are spendable currency. Ark Points are permanent progression, with level `1 + floor(sqrt(points / 120))`. Distance rewards arrive every 500 plausible horizontal studs. Daily challenges reset at midnight UTC and require an explicit reward claim. Aurora Tide runs for eight minutes every thirty minutes, introduces the Aurora Manta, and awards coins, points, and a permanent title for three event catches. Each player may rescue three mantas per tide. Studio previews the event by default.
 
+Walking pays 2 coins and 1 point every ten estimated steps (30 studs); swimming pays 3 coins and 2 points every ten estimated strokes (40 studs). The server samples physical displacement, Terrain water, grounding and seat state. Boats, airtime, stationary jitter and implausible speed do not qualify. Walking and swimming have separate cumulative distances, so fractional progress survives reconnects without repeating a paid boundary. These are plausibility checks, not comprehensive movement anti-cheat.
+
+Water exploration uses a session-only fatigue reserve: 30 seconds without gear, 60 with a snorkel, or 180 with the diving kit. A life jacket adds 60 seconds. Swimming drains the reserve even while idle; exhaustion deals 10 health per second after the reserve reaches zero. Land and boat rest recover 8 seconds per second. Life-ring pickups restore 15 seconds and suspend fatigue for 20 seconds; first-aid floats restore 25 health and 20 seconds of endurance. Server-validated shared pickups respawn after 90 seconds at a randomized nearby water position. Reserves reset on character respawn, while permanent equipment and earned progression remain in the journal.
+
 ## Map integration
 
 MAP 1.jpeg was supplied as an inline floor-plan image. Per the user's preference, the default world mixes architectural circulation with outdoor biomes and waterways. The layout is a hand-traced gameplay interpretation: main shapes and room groups are retained, smaller partitions consolidated, roofs omitted, and an open-sea area added. See [MAP1_DESIGN.md](MAP1_DESIGN.md) and the generated diagram. A Studio `ZoMap` can still override the generated campus; see [MAP_IMPORT.md](MAP_IMPORT.md).
+
+Dry foundation tiles extend below the seabed, preventing an underwater route beneath the campus. The pools and sea gate remain cut out. Four outer shore stairs provide water exits without changing the main plan. Animal blueprints use original ellipsoids, blocks and wedges for species-specific anatomy and markings; server animation supplies walking, flipper, wing and tail motion. They remain stylized Roblox models, with lighting and performance still requiring Studio review.
 
 ## Trust and saving
 

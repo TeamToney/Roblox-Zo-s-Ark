@@ -4,6 +4,8 @@ Explore an Ark sanctuary campus, outdoor habitats and the surrounding sea. Colle
 
 This first playable uses an approximate reconstruction of the uploaded **MAP 1.jpeg**, combining its building layout with outdoor biomes and open-sea exploration. It includes fourteen animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily challenges, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use procedural placeholder art. Player-to-player trading and Robux purchases are not implemented.
 
+The water-survival update adds solid island foundations down to the seabed, four marked shore stairways, swim endurance, recovery pickups, and bonuses for walking and swimming. Animals now have species-specific silhouettes, coat patterns, shells, fins and feathers, with animated limbs, wings and tails made from original Roblox primitives.
+
 See the [colored layout diagram](docs/map-1-layout.svg) and [Map 1 design notes](docs/MAP1_DESIGN.md). The map preserves the southern entrance, lower gallery corridor, pointed central atrium, flanking rooms and large eastern hall; smaller partitions are simplified. The scale is chosen for play, not recovered from the scan's measurements.
 
 ## Open and play
@@ -20,6 +22,14 @@ For development builds:
 6. Visit Tidewater Hall in the northeast. Descend its southern boarding steps, borrow a boat, and use normal movement controls to steer; jump to leave. Sail through the eastern sea gate to find more marine wildlife. Each boat seats three players including the pilot.
 
 Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B** store, **C** challenges, **M** chart, **H** guide. Boats are free and return to their dock after 45 seconds without occupants. Gear upgrades apply automatically, including the nonlethal tranquilizer upgrade; there is no aiming or weapon combat system yet.
+
+### Swimming and movement bonuses
+
+- Swim endurance starts at **30 seconds**. A **Reef Snorkel** raises it to **60 seconds**, a **Deepwater Kit** to **180 seconds**, and an **Expedition Life Jacket** adds **60 seconds** to your current water gear. Water gear applies automatically.
+- Endurance runs down while in water, even when idle. At zero, exhaustion removes **10 health per second**. Rest on solid land or sit in a boat to recover **8 seconds of endurance per second**. Jumping does not refill it.
+- Hold the prompt on an orange floating **life ring** to recover **15 seconds** and receive **20 seconds of flotation**, during which endurance does not drain. Green **first-aid floats** restore **25 health** and **20 seconds** of endurance. Pickups are scattered through the pools, open sea and near shore exits; used pickups return in a new nearby position after **90 seconds**.
+- Every **10 walking steps** earns **2 coins + 1 Ark Point**. Every **10 swimming strokes** earns **3 coins + 2 Ark Points**. Steps and strokes are estimated from server-observed movement (3 studs per step, 4 per stroke); boats and airtime do not count. Partial progress persists in existing journals. The 500-stud exploration bonus remains available, including by boat.
+- Use the four **EXIT** markers on the chart to find the outer shore stairways. The marine hall's boarding and swimming steps remain open.
 
 ## Build and verify in the cloud / Linux
 
@@ -64,11 +74,15 @@ Open the place, connect the Rojo plugin to the local server, and sync the source
 | `src/shared/Rules.luau` | Testable progression, purchases, trades, rewards |
 | `src/shared/MapLayout.luau` | Hand-traced Map 1 rooms, paths, habitats, dock, sea gate |
 | `src/shared/MapGeometry.luau` | Coordinate conversion, door gaps, foundation cutouts, floor outlines |
+| `src/shared/SwimRules.luau` | Equipment endurance, fatigue, flotation and recovery rules |
+| `src/shared/AnimalShapes.luau` | Pure geometry blueprints for all fourteen animal species |
 | `src/server/Bootstrap.server.luau` | Server authority, remotes, capture/travel validation |
 | `src/server/ProfileStore.luau` | Profile ownership, safe loading and saving |
 | `src/server/World.luau` | Map selection, collision-aware spawning, boats |
 | `src/server/PlanWorld.luau` | Map 1 campus, open-air habitats, marine pools, boarding steps |
 | `src/server/Wildlife.luau` | Species spawning, simple models, roaming, capture prompts |
+| `src/server/WaterSafety.luau` | Server water checks, exhaustion, shared recovery pickups and movement sampling |
+| `src/server/AnimalModels.luau` | Roblox model construction and limb/fin/wing animation |
 | `src/client/Main.client.luau` | Responsive HUD, journal, store, challenges, chart, guide |
 | `tests/` | Automated gameplay-rule checks |
 
