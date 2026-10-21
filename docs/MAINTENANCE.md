@@ -17,7 +17,7 @@ Run `bash scripts/check.sh` after changing rules or scripts. Perform the relevan
 
 ## Tune progression and events
 
-`Config.luau` holds economy limits and event cadence. `Catalog.luau` holds prices and species/challenge definitions. Capture stipend is 20% of listed sanctuary value; capture probability is `clamp(0.93 - difficulty + 0.08 × (tier - 1) + baitBonus, 0.12, 0.96)`, with a 0.15 bait bonus. Rarity and apex hierarchy are expressed through the species definition rather than a client-supplied score.
+`Config.luau` holds economy limits and event cadence. `Catalog.luau` holds prices and species/challenge definitions. Capture stipend is 20% of listed sanctuary value; capture probability is `clamp(0.93 - difficulty + 0.08 × (tier - 1) + baitBonus + encounterAdjustment, 0.12, 0.96)`, with a 0.15 bait bonus. Fleeing applies -0.18; a gentle snare applies +0.22. Server encounter state supplies this adjustment; clients cannot choose it. Rarity and apex hierarchy are expressed through the species definition rather than a client-supplied score.
 
 Aurora Tide shares a wall-clock schedule across servers. Each player may rescue at most three event mantas per tide, and may claim the tide prize once. Keep event IDs stable when extending the schedule so replayed saves cannot claim the same reward twice. Studio previews are deliberately temporary and must not be used against production save data.
 
@@ -38,3 +38,11 @@ Player-to-player trading needs a separate transaction design with escrow, two-pa
 ## Asset and map maintenance
 
 Keep provenance and licenses for imported maps, models, audio, and thumbnails. Generated placeholders have no third-party asset dependencies. Prefer known geometry and inspect imported scripts. Maintain the marker contract in `MAP_IMPORT.md` and run a full traversal pass after terrain, scale, collision, or streaming changes.
+
+## Outfitters and paid grants
+
+The shop update retains schema v1 and all previous IDs. Additive `stock` counts (`speedBoost`, `animalTrap`), `wardrobe` cosmetic slots, and `receipts` purchase-ID markers default empty/zero. Sanitization preserves known owned equipment and valid slots; migration and reconnect tests cover old journals. Unused supplies persist; active boost/scanner timers do not persist across server sessions. Cosmetic slots are reapplied on respawn. Keep paid receipt IDs indefinitely: removing markers can duplicate a retried purchase. Monitor record size before introducing high-volume monetization.
+
+`Catalog.Items` supplies both prices, categories and quantities; `Catalog.Products` supplies guaranteed grants and duplicate-owned bundle compensation. `Monetization.luau` maps stable product keys to owner-created Developer Product IDs. Follow [ROBUX_SETUP.md](ROBUX_SETUP.md). Keep the ProcessReceipt handler unique; never grant from client callbacks. Receipt handling reserves the grant and marker without yielding, then saves under the current session lease. A failed save retains the in-memory marker; the callback waits for journal loading or an in-flight save, retries writes within a bounded window, then returns NotProcessedYet if still blocked. Roblox has no periodic receipt retry; rejoining or another purchase triggers delivery again. Retries save again without granting twice. Unknown products, unavailable journals, lost leases and temporary sessions remain pending. Do not remove IDs for products that might still have pending receipts.
+
+`Storefront.luau` owns physical shop geometry; `ItemShapes.luau` supplies both world and UI merchandise props. `FieldKit.luau` owns timed speed, scans, trap placement and wardrobe replication. Update both WaterSafety's sampling ceiling and Rules.movement when changing boosted speeds. Never use a client attribute as proof of a boost. `Catalog.Escape` and `EncounterRules` tune wildlife; keep flight arcs finite, wall checks enabled, path calculations bounded, and obscure destinations local. `ChestEffects.luau` renders server-authorized outcomes only; effects must never mutate the journal.

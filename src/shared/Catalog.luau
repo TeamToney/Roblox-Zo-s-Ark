@@ -7,6 +7,7 @@ export type Species = {
 export type Item = {
 	name: string, price: number, description: string,
 	kind: string, tier: number?, capacity: number?,
+	pointsPrice: number?, category: string?, stock: string?, quantity: number?, slot: string?,
 }
 local Catalog = {}
 Catalog.Rarities = {
@@ -88,5 +89,33 @@ Catalog.Loot = {
 	{kind = "coins", weight = 35}, {kind = "animal", weight = 30}, {kind = "equipment", weight = 20},
 	{kind = "pointsTrap", weight = 10}, {kind = "deathTrap", weight = 5},
 }
-Catalog.ChestEquipment = {"rangerNet", "snorkel", "lifeJacket", "fieldPack", "expeditionNet"}
+Catalog.Items.speedBoost = {name = "Expedition Sprint", price = 90, pointsPrice = 60, description = "One 45-second boost: run at 28 studs/s and swim faster. Activate from your field kit.", kind = "supply", category = "Boosts", stock = "speedBoost", quantity = 1}
+Catalog.Items.animalTrap = {name = "Gentle Animal Snare", price = 120, pointsPrice = 80, description = "One humane ground trap. Holds an animal for 8 seconds; rescue gear requirements still apply.", kind = "supply", category = "Tracking", stock = "animalTrap", quantity = 1}
+Catalog.Items.tracker = {name = "Wildlife Scanner", price = 850, pointsPrice = 550, description = "Reveal nearby wildlife signals for 20 seconds. Works within 140 studs; 30-second cooldown.", kind = "access", category = "Tracking"}
+Catalog.Items.camoCoat = {name = "Ranger Camouflage", price = 550, pointsPrice = 360, description = "Approach nervous animals more closely before they flee. Automatically active when owned.", kind = "access", category = "Gear"}
+Catalog.Items.safariHat = {name = "Safari Explorer Hat", price = 240, pointsPrice = 160, description = "A sand-colored brimmed hat with a mint ranger band. Equip or remove in your field kit.", kind = "cosmetic", category = "Style", slot = "hat"}
+Catalog.Items.mintTrail = {name = "Aurora Footsteps", price = 380, pointsPrice = 250, description = "Leave a soft mint-and-gold trail behind your explorer. Purely cosmetic.", kind = "cosmetic", category = "Style", slot = "trail"}
+for _, id in {"speedBoost", "animalTrap", "tracker", "camoCoat", "safariHat", "mintTrail"} do table.insert(Catalog.ItemOrder, id) end
+for _, item in Catalog.Items do
+	item.pointsPrice = item.pointsPrice or math.ceil(item.price * 0.65)
+	item.category = item.category or (if item.kind == "net" then "Rescue" elseif item.kind == "consumable" then "Boosts" else "Gear")
+end
+Catalog.Categories = {"All", "Rescue", "Gear", "Tracking", "Boosts", "Style"}
+-- Guaranteed products only; IDs are configured in Monetization.luau.
+Catalog.Products = {
+	sprintPack = {name = "3 Expedition Sprints", description = "Three 45-second sprint boosts, ready to activate in your Field Kit.", stock = "speedBoost", quantity = 3},
+	trapPack = {name = "3 Gentle Animal Snares", description = "Three single-use land snares. Rescue gear is still required.", stock = "animalTrap", quantity = 3},
+	explorerStyle = {name = "Explorer Style Bundle", description = "Safari Hat + Aurora Footsteps. If you already own both: 400 coins instead.", items = {"safariHat", "mintTrail"}, duplicateCoins = 400},
+	rangerKit = {name = "Ranger Expedition Kit", description = "Ranger Net, Pack, Scanner, Snorkel, Life Jacket + Camouflage. Own all six? 1,200 coins instead.", display = "fieldPack", items = {"rangerNet", "fieldPack", "tracker", "snorkel", "lifeJacket", "camoCoat"}, duplicateCoins = 1200},
+} :: {[string]: any}
+Catalog.ProductOrder = {"sprintPack", "trapPack", "explorerStyle", "rangerKit"}
+Catalog.Escape = {
+	fox = {mode = "run", alert = 17, speed = 15}, deer = {mode = "run", alert = 21, speed = 19},
+	raccoon = {mode = "run", alert = 15, speed = 13}, boar = {mode = "run", alert = 18, speed = 16},
+	parrot = {mode = "fly", alert = 19, speed = 17}, eagle = {mode = "fly", alert = 22, speed = 22},
+	jaguar = {mode = "run", alert = 22, speed = 23}, tiger = {mode = "run", alert = 23, speed = 24},
+	snowLeopard = {mode = "run", alert = 23, speed = 24}, arcticFox = {mode = "run", alert = 20, speed = 20},
+	ibex = {mode = "run", alert = 19, speed = 18}, peacock = {mode = "fly", alert = 16, speed = 14},
+} :: {[string]: {mode: string, alert: number, speed: number}}
+Catalog.ChestEquipment = {"rangerNet", "snorkel", "lifeJacket", "fieldPack", "expeditionNet", "tracker", "camoCoat", "safariHat", "mintTrail"}
 return table.freeze(Catalog)

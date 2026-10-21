@@ -96,9 +96,7 @@ function World.build(config)
 	spawn.Transparency = 1; spawn.Anchored = true; spawn.CanCollide = false; spawn.Neutral = true
 	spawn.Duration = 0; spawn.Parent = runtime
 	self.spawnLocation = spawn
-	local kiosk = part(runtime, "ArkStation", Vector3.new(10, 6, 5), CFrame.new(self.hub + Vector3.new(13, 2, 0)), C.navy, Enum.Material.WoodPlanks)
-	part(runtime, "StationAwning", Vector3.new(13, 1, 8), kiosk.CFrame * CFrame.new(0, 4, 0), C.mint, Enum.Material.Fabric)
-	label(kiosk, "ARK OUTFITTERS\nGear • sanctuary trades", 8, 280)
+	local kiosk = require(script.Parent.Storefront).build(self, part, label)
 	self.shopPosition = kiosk.Position
 	self.shopPrompt = prompt(kiosk, "Open store & sanctuary", "Ark Outfitters", 22)
 	local board = part(runtime, "ChallengeBoard", Vector3.new(10, 7, 1), CFrame.new(self.hub + Vector3.new(-17, 3, 0)), C.wood, Enum.Material.WoodPlanks)

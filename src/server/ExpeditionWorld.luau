@@ -2,7 +2,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local ExpeditionWorld = {}
-function ExpeditionWorld.build(world, catalog, rules, getProfile, notify)
+function ExpeditionWorld.build(world, catalog, rules, getProfile, notify, effects)
 	local lastInteraction = {}
 	local random = Random.new()
 	local function nearby(player, position, distance)
@@ -59,6 +59,7 @@ function ExpeditionWorld.build(world, catalog, rules, getProfile, notify)
 			local ok, result = rules.openChest(getProfile(player), spot.id, random:NextNumber(), random:NextNumber(), os.time())
 			notify(player, result.message, if ok and result.kind ~= "pointsTrap" and result.kind ~= "deathTrap" then "success" else "info")
 			if not ok then return end
+			effects:FireClient(player,{kind="chest",position=box.Position,rank=result.celebration,trap=result.kind=="deathTrap" or result.kind=="pointsTrap"})
 			if not animating then
 				animating = true; local closed = lid.CFrame
 				TweenService:Create(lid, TweenInfo.new(0.25), {CFrame = closed * CFrame.new(0, 1.1, 0.7) * CFrame.Angles(math.rad(-50), 0, 0)}):Play()

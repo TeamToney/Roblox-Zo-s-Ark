@@ -3,6 +3,7 @@
 export type Profile = {
 	coins: number, points: number, inventory: {[string]: number}, owned: {[string]: boolean},
 	discovered: {[string]: boolean}, titles: {[string]: boolean}, bait: number,
+	stock: {[string]: number}, wardrobe: {[string]: string}, receipts: {[string]: boolean},
 	stats: {catches: number, rare: number, distance: number, traded: number, walkDistance: number, swimDistance: number},
 	daily: {day: number, catches: number, rare: number, distance: number, claimed: {[string]: boolean}},
 	event: {id: number, captures: number, claimed: boolean},
@@ -30,6 +31,7 @@ function Rules.new(catalog: any, config: any)
 	function api.blank(now: number): Profile
 		return {
 			coins = config.StartingCoins, points = 0, inventory = {}, owned = {}, discovered = {}, titles = {}, bait = 0,
+			stock = {speedBoost = 0, animalTrap = 0}, wardrobe = {}, receipts = {},
 			stats = {catches = 0, rare = 0, distance = 0, traded = 0, walkDistance = 0, swimDistance = 0},
 			daily = {day = math.floor(now / 86400), catches = 0, rare = 0, distance = 0, claimed = {}},
 			event = {id = -2, captures = 0, claimed = false},
@@ -54,6 +56,17 @@ function Rules.new(catalog: any, config: any)
 		end
 		for id in catalog.Items do
 			if type(raw.owned) == "table" and raw.owned[id] == true then p.owned[id] = true end
+		end
+		for id in p.stock do p.stock[id] = integer(if type(raw.stock) == "table" then raw.stock[id] else nil, 0, 1000000000) end
+		if type(raw.wardrobe) == "table" then
+			for slot, id in raw.wardrobe do
+				local item = if type(id) == "string" then catalog.Items[id] else nil
+				if item and item.kind == "cosmetic" and item.slot == slot and p.owned[id] then p.wardrobe[slot] = id end
+			end
+		end
+		-- Receipt IDs must survive reconnects for exactly-once paid grants.
+		if type(raw.receipts) == "table" then
+			for id, granted in raw.receipts do if type(id) == "string" and #id <= 200 and granted == true then p.receipts[id] = true end end
 		end
 		if type(raw.titles) == "table" and raw.titles[config.EventTitle] == true then p.titles[config.EventTitle] = true end
 		if type(raw.stats) == "table" then
@@ -115,7 +128,7 @@ function Rules.new(catalog: any, config: any)
 	function api.level(points: number): number
 		return 1 + math.floor(math.sqrt(points / 120))
 	end
-	function api.chance(p: Profile, id: string): (number?, string?)
+	function api.chance(p: Profile, id: string, condition: string?): (number?, string?)
 		local animal = catalog.Species[id]
 		if not animal then return nil, "Unknown animal." end
 		if api.count(p) >= api.capacity(p) then return nil, "Your pack is full. Trade at the Ark." end
@@ -124,16 +137,17 @@ function Rules.new(catalog: any, config: any)
 		if animal.gear and not p.owned[animal.gear] and not (animal.gear == "snorkel" and p.owned.diving) then
 			return nil, "Buy the " .. catalog.Items[animal.gear].name .. " at the Ark first."
 		end
-		return math.clamp(0.93 - animal.difficulty + (tier - 1) * 0.08 + (if p.bait > 0 then 0.15 else 0), 0.12, 0.96), nil
+		local adjustment = if condition == "snared" then 0.22 elseif condition == "fleeing" then -0.18 else 0
+		return math.clamp(0.93 - animal.difficulty + (tier - 1) * 0.08 + (if p.bait > 0 then 0.15 else 0) + adjustment, 0.12, 0.96), nil
 	end
-	function api.attempt(p: Profile, id: string, roll: number, now: number, preview: boolean?, mapId: string?): (boolean, string)
+	function api.attempt(p: Profile, id: string, roll: number, now: number, preview: boolean?, mapId: string?, condition: string?): (boolean, string)
 		if type(roll) ~= "number" or roll ~= roll or roll < 0 or roll >= 1 then return false, "Invalid capture roll." end
 		local animal = catalog.Species[id]
 		if not animal then return false, "Unknown animal." end
 		local event = api.eventWindow(now, preview)
 		if animal.eventOnly and not event.active then return false, "The Aurora Tide event has ended." end
 		if animal.eventOnly and p.event.id == event.id and p.event.captures >= config.EventGoal then return false, "You rescued this tide's three mantas! Claim your prize on the expedition board." end
-		local chance, reason = api.chance(p, id)
+		local chance, reason = api.chance(p, id, condition)
 		if not chance then return false, reason or "Unable to capture." end
 		api.refresh(p, now)
 		if p.bait > 0 then p.bait -= 1 end
@@ -155,15 +169,44 @@ function Rules.new(catalog: any, config: any)
 		end
 		return true, "Collected " .. animal.name .. "! +" .. coins .. " coins • +" .. animal.points .. " Ark Points"
 	end
-	function api.buy(p: Profile, id: string): (boolean, string)
+	function api.buy(p: Profile, id: string, currency: string?): (boolean, string)
 		local item = catalog.Items[id]
 		if not item then return false, "Unknown item." end
-		if item.kind ~= "consumable" and p.owned[id] then return false, "You already own this upgrade." end
+		if currency ~= nil and currency ~= "coins" and currency ~= "points" then return false, "Choose coins or Ark Points." end
+		if item.kind ~= "consumable" and item.kind ~= "supply" and p.owned[id] then return false, "You already own this upgrade." end
 		if item.kind == "consumable" and p.bait > 994 then return false, "You have enough bait for now." end
-		if p.coins < item.price then return false, "You need " .. (item.price - p.coins) .. " more coins." end
-		p.coins -= item.price
-		if item.kind == "consumable" then p.bait += 5 else p.owned[id] = true end
-		return true, "Purchased " .. item.name .. ". Permanent gear is used automatically."
+		if item.stock and (p.stock[item.stock] or 0) >= 999 then return false, "Use some of your supplies first." end
+		local key = if currency == "points" then "points" else "coins"
+		local price = if key == "points" then item.pointsPrice else item.price
+		if (p :: any)[key] < price then return false, "Not enough " .. (if key == "points" then "Ark Points." else "coins.") end
+		(p :: any)[key] -= price
+		if item.kind == "consumable" then p.bait += 5
+		elseif item.stock then p.stock[item.stock] = (p.stock[item.stock] or 0) + item.quantity
+		else p.owned[id] = true end
+		return true, "Purchased " .. item.name .. ". Open your Field Kit to use supplies or equip style."
+	end
+	function api.equip(p: Profile, id: string): (boolean, string)
+		local item = catalog.Items[id]
+		if not item or item.kind ~= "cosmetic" or not p.owned[id] then return false, "You must own this cosmetic first." end
+		local slot = item.slot :: string
+		if p.wardrobe[slot] == id then p.wardrobe[slot] = nil; return true, "Removed " .. item.name .. "." end
+		p.wardrobe[slot] = id; return true, "Equipped " .. item.name .. "."
+	end
+	function api.consume(p: Profile, id: string): boolean
+		if not catalog.Items[id] or catalog.Items[id].kind ~= "supply" or (p.stock[id] or 0) < 1 then return false end
+		p.stock[id] -= 1; return true
+	end
+	function api.grantProduct(p: Profile, id: string): boolean
+		local product = catalog.Products[id]
+		if not product then return false end
+		if product.stock then
+			p.stock[product.stock] = (p.stock[product.stock] or 0) + product.quantity
+		else
+			local allOwned = true
+			for _, itemId in product.items do if not p.owned[itemId] then allOwned = false end; p.owned[itemId] = true end
+			if allOwned then p.coins += product.duplicateCoins end
+		end
+		return true
 	end
 	function api.sell(p: Profile, id: string, amount: number): (boolean, string)
 		local animal = catalog.Species[id]
@@ -188,10 +231,10 @@ function Rules.new(catalog: any, config: any)
 	-- Steps/strokes are estimated from verified server displacement, never a
 	-- client-supplied counter. Boats, airborne movement and teleports are excluded
 	-- by the server sampler as well as these mode/speed/interval checks.
-	function api.movement(p: Profile, mode: string, distance: number, elapsed: number): number
+	function api.movement(p: Profile, mode: string, distance: number, elapsed: number, boosted: boolean?): number
 		if mode ~= "walk" and mode ~= "swim" then return 0 end
 		local swimming = mode == "swim"
-		local speed = if swimming then config.MaxSwimPerSecond else config.MaxWalkPerSecond
+		local speed = if boosted then (if swimming then config.BoostSwimSpeed + 4 else config.BoostWalkSpeed + 4) else (if swimming then config.MaxSwimPerSecond else config.MaxWalkPerSecond)
 		if distance ~= distance or distance < 0.15 or distance == math.huge or elapsed ~= elapsed or elapsed <= 0 or elapsed > 2 or distance > speed * elapsed then return 0 end
 		local key = if swimming then "swimDistance" else "walkDistance"
 		local stride = if swimming then config.StrokeStuds else config.StepStuds
@@ -253,11 +296,15 @@ function Rules.new(catalog: any, config: any)
 				p.inventory[speciesId] = (p.inventory[speciesId] or 0) + 1
 				result.message = "An animal was hiding inside: " .. animal.name .. "! +" .. animal.points .. " points."
 			end
+		elseif kind == "equipment" and choice >= 0.8 then
+			local itemId = if choice < 0.94 then "speedBoost" else "animalTrap"
+			p.stock[itemId] += 1; result.kind = "supply"; result.equipment = itemId
+			result.message = "Hidden supply: " .. catalog.Items[itemId].name .. "! Use it in your Field Kit."
 		elseif kind == "equipment" then
 			local pool = {}; for _, itemId in catalog.ChestEquipment do if not p.owned[itemId] then table.insert(pool, itemId) end end
 			if #pool > 0 then
-				local itemId = pool[math.floor(choice * #pool) + 1]; p.owned[itemId] = true; result.equipment = itemId
-				result.message = "Hidden equipment: " .. catalog.Items[itemId].name .. "! It is now active."
+				local itemId = pool[math.floor(choice / 0.8 * #pool) + 1]; p.owned[itemId] = true; result.equipment = itemId
+				result.message = "Hidden equipment: " .. catalog.Items[itemId].name .. "! " .. (if catalog.Items[itemId].kind == "cosmetic" then "Equip it in your Field Kit." else "It is now active.")
 			else p.coins += 120; result.message = "You own all the chest equipment. Found 120 coins instead!" end
 		elseif kind == "pointsTrap" then
 			local lost = math.min(p.points, math.max(10, math.floor(p.points * 0.12)))
@@ -266,6 +313,7 @@ function Rules.new(catalog: any, config: any)
 		else
 			local coins = 40 + math.floor(choice * 111); p.coins += coins; result.message = "Treasure! Found " .. coins .. " coins."
 		end
+		result.celebration = if result.kill or kind == "pointsTrap" then 0 elseif result.animal then catalog.Rarities[catalog.Species[result.animal].rarity].rank elseif result.equipment then 3 else (if choice > 0.7 then 2 else 1)
 		return true, result
 	end
 	function api.claim(p: Profile, id: string, now: number, preview: boolean?): (boolean, string)

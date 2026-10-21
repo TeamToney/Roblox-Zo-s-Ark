@@ -7,9 +7,9 @@ local World = require(script.Parent.World)
 local WaterSafety = {}
 WaterSafety.__index = WaterSafety
 
-function WaterSafety.new(world, config, getOwned, onMovement, notify)
+function WaterSafety.new(world, config, getOwned, onMovement, notify, isBoosted)
 	return setmetatable({world = world, config = config, rules = SwimRules.new(config), getOwned = getOwned,
-		onMovement = onMovement, notify = notify, records = {}, pickups = {}, random = Random.new()}, WaterSafety)
+		onMovement = onMovement, notify = notify, isBoosted = isBoosted, records = {}, pickups = {}, random = Random.new()}, WaterSafety)
 end
 
 function WaterSafety:remove(player)
@@ -174,7 +174,8 @@ function WaterSafety:start()
 			if damage > 0 then humanoid:TakeDamage(damage) end
 			if mode and record.mode == mode and record.position then
 				local delta = root.Position - record.position
-				local speed = if swimming then self.config.MaxSwimPerSecond else self.config.MaxWalkPerSecond
+				local boosted = self.isBoosted(player)
+				local speed = if boosted then (if swimming then self.config.BoostSwimSpeed+4 else self.config.BoostWalkSpeed+4) else (if swimming then self.config.MaxSwimPerSecond else self.config.MaxWalkPerSecond)
 				if delta.Magnitude <= speed * interval then
 					self.onMovement(player, mode, Vector2.new(delta.X, delta.Z).Magnitude, interval)
 				end

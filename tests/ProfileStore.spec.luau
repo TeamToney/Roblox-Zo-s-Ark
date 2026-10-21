@@ -165,5 +165,43 @@ test("checkpoint and daily chest state survive lease release and reconnect", fun
 	equal(Rules.openChest(restored.data, "moonstonePoint", 0, 0, f.adapter.now()), false)
 	equal(restored.data.inventory.axolotl, 1); equal(restored.data.owned.lifeJacket, true)
 end)
+local Receipts = require("../src/shared/ReceiptRules")
+test("a paid receipt is acknowledged only after its grant and marker are persisted", function()
+	local f=fixture(); local session=assert(f.store:load(1))
+	assert(Receipts.process(session,"purchase-1","sprintPack",Rules,function(s) return f.store:save(s,false) end))
+	equal(session.data.stock.speedBoost,3); equal(f.records.u_1.data.stock.speedBoost,3); equal(f.records.u_1.data.receipts["purchase-1"],true)
+	assert(Receipts.process(session,"purchase-1","sprintPack",Rules,function(s) return f.store:save(s,false) end))
+	equal(session.data.stock.speedBoost,3)
+	assert(f.store:save(session,true)); local restored=assert(f.store:load(1))
+	assert(Receipts.process(restored,"purchase-1","sprintPack",Rules,function(s) return f.store:save(s,false) end)); equal(restored.data.stock.speedBoost,3)
+end)
+test("a failed receipt write retries safely without granting a bundle twice", function()
+	local f=fixture(); local session=assert(f.store:load(1)); f.db.failures=3
+	equal(Receipts.process(session,"purchase-2","trapPack",Rules,function(s) return f.store:save(s,false) end),false)
+	equal(session.data.stock.animalTrap,3); equal(f.records.u_1.data.stock.animalTrap,0)
+	assert(Receipts.process(session,"purchase-2","trapPack",Rules,function(s) return f.store:save(s,false) end))
+	equal(session.data.stock.animalTrap,3); equal(f.records.u_1.data.stock.animalTrap,3)
+end)
+test("a receipt retry in a new session recovers a grant lost before persistence", function()
+	local f=fixture(); local session=assert(f.store:load(1)); f.db.failures=3
+	equal(Receipts.process(session,"lost-before-save","sprintPack",Rules,function(s) return f.store:save(s,false) end),false)
+	f.advance(Config.LeaseSeconds+1); local recovered=assert(f.store:load(1))
+	assert(Receipts.process(recovered,"lost-before-save","sprintPack",Rules,function(s) return f.store:save(s,false) end))
+	equal(recovered.data.stock.speedBoost,3)
+	equal(Receipts.process(session,"lost-before-save","sprintPack",Rules,function(s) return f.store:save(s,false) end),false)
+	equal(f.records.u_1.data.stock.speedBoost,3)
+end)
+test("unloaded busy lost temporary and unknown-product receipts remain pending", function()
+	local f=fixture(); local session=assert(f.store:load(1)); local saves=0
+	local function save(_s: any) saves+=1; return true end
+	equal(Receipts.process(nil,"x","sprintPack",Rules,save),false)
+	for _,flag in {"saving","lost","closed","temporary"} do
+		session[flag]=true; equal(Receipts.process(session,"x","sprintPack",Rules,save),false); session[flag]=false
+	end
+	equal(Receipts.process(session,"x",nil,Rules,save),false)
+	equal(Receipts.process(session,"x","unknown",Rules,save),false)
+	for _,id in {"",string.rep("x",201)} do equal(Receipts.process(session,id,"sprintPack",Rules,save),false) end
+	equal(saves,0); equal(session.data.stock.speedBoost,0)
+end)
 print(string.format("\n%d profile-store cases passed, %d failed (injected service adapter, not live DataStore)", passed, failed))
 if failed > 0 then error("Zo's Ark profile-store checks failed") end

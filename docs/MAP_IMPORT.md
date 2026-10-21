@@ -10,7 +10,7 @@ Create these anchored, invisible marker Parts inside `ZoMap`. Set `CanCollide`, 
 
 | Marker | Configuration |
 | --- | --- |
-| `ZoHub` | Position where the Ark station area begins. A kiosk is generated 13 studs along world +X; reserve clear, walkable space around it. |
+| `ZoHub` | Position where the Ark station area begins. A 38×24-stud storefront is generated at world offset (+17, +15 on X/Z), facing north; reserve this footprint, its 13.5-stud height and a clear approach from the north. |
 | `ZoSpawn` | Spawn CFrame just above a safe ground surface near the hub. The runtime creates a neutral invisible SpawnLocation here. Remove or disable other spawn locations in the imported place. |
 | Animal zones | Apply the CollectionService tag **`ZoAnimalZone`** in Studio's Tags editor. Add string attribute **`Habitat`**, one of `meadow`, `jungle`, `summit`, `reef`, `ocean`. Add numeric **`Radius`** (12–180, default 60) and **`Population`** (1–12, default 6). |
 | Boat docks | Apply tag **`ZoBoatSpawn`** to each marker. Its CFrame is the boat hull center; its forward / LookVector direction should point away from the dock. Leave space for a 10×16 stud boat. |

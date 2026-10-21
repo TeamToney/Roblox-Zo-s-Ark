@@ -10,6 +10,8 @@ local World = require(script.Parent.World)
 local Wildlife = require(script.Parent.Wildlife)
 local WaterSafety = require(script.Parent.WaterSafety)
 local ExpeditionWorld = require(script.Parent.ExpeditionWorld)
+local FieldKit = require(script.Parent.FieldKit)
+local EncounterRules = require(Shared.EncounterRules)
 local Store = require(script.Parent.ProfileStore).new(Rules, Config, {
 	openStore = function(name) return game:GetService("DataStoreService"):GetDataStore(name) end,
 	temporary = RunService:IsStudio() and workspace:GetAttribute("ZoUseLiveDataInStudio") ~= true,
@@ -21,9 +23,10 @@ local remotes = Instance.new("Folder"); remotes.Name = "ZoRemotes"; remotes.Pare
 local action = Instance.new("RemoteFunction"); action.Name = "Action"; action.Parent = remotes
 local changed = Instance.new("RemoteEvent"); changed.Name = "Changed"; changed.Parent = remotes
 local boatInput = Instance.new("RemoteEvent"); boatInput.Name = "BoatInput"; boatInput.Parent = remotes
+local effects = Instance.new("RemoteEvent"); effects.Name = "Effects"; effects.Parent = remotes
 local world = World.build(Config)
 local sessions, positions, buckets, captureTimes, loading = {}, {}, {}, {}, {}
-local waterSafety
+local waterSafety, fieldKit, commerce
 local closing = false
 local preview = RunService:IsStudio() and workspace:GetAttribute("ZoPreviewEvent") ~= false
 
@@ -48,20 +51,26 @@ local function snapshot(player)
 		local value, goal = Rules.expeditionProgress(session.data, id)
 		expeditions[id] = {value = value, goal = goal, claimed = session.data.exploration.claimed[id] == true}
 	end
-	return {profile = session.data, expeditions = expeditions, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
+	return {kit = if fieldKit then fieldKit:snapshot(player) else nil, offers = if commerce then commerce.offers else {}, profile = session.data, expeditions = expeditions, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
 end
 
 local function push(player, message, kind)
 	if player.Parent == Players then changed:FireClient(player, {state = snapshot(player), message = message, kind = kind}) end
 end
 
+local function getProfile(player)
+	local session=sessions[player]
+	return if session and not session.lost and not session.closed and not closing then session.data else nil
+end
+fieldKit = FieldKit.new(world,Config,Catalog,Rules,getProfile,push,effects)
+commerce = require(script.Parent.Commerce).new(Catalog,Rules,Store,function(player) return if not closing then sessions[player] else nil end,push)
 waterSafety = WaterSafety.new(world, Config, function(player)
 	local session = sessions[player]
 	return if session and not session.lost and not session.closed then session.data.owned else nil
 end, function(player, mode, distance, elapsed)
 	local session = sessions[player]
 	if not session or session.lost or session.closed or closing then return end
-	local awards = Rules.movement(session.data, mode, distance, elapsed)
+	local awards = Rules.movement(session.data, mode, distance, elapsed, fieldKit:boosted(player))
 	local character = player.Character
 	if character then
 		character:SetAttribute("ZoSteps", math.floor(session.data.stats.walkDistance / Config.StepStuds))
@@ -73,12 +82,12 @@ end, function(player, mode, distance, elapsed)
 		local points = awards * (if swimming then Config.SwimBonusPoints else Config.WalkBonusPoints)
 		push(player, (if swimming then "Swimming" else "Walking") .. " bonus! +" .. coins .. " coins • +" .. points .. " Ark Points", "success")
 	end
-end, push)
+end, push, function(player) return fieldKit:boosted(player) end)
 
 ExpeditionWorld.build(world, Catalog, Rules, function(player)
 	local session = sessions[player]
 	return if session and not session.closed and not session.lost and not closing then session.data else nil
-end, push)
+end, push, effects)
 
 local function allow(player)
 	local now = os.clock()
@@ -93,15 +102,23 @@ action.OnServerInvoke = function(player, request)
 	if not allow(player) then return {ok = false, message = "Please wait a moment."} end
 	if closing then return {ok = false, message = "The Ark is saving. Please rejoin shortly."} end
 	local session = sessions[player]
-	if not session or session.lost then return {ok = false, message = "Your journal is still loading."} end
+	if not session or session.lost or session.closed then return {ok = false, message = "Your journal is still loading."} end
 	if type(request) ~= "table" or type(request.action) ~= "string" then return {ok = false, message = "Invalid request."} end
 	if request.action == "snapshot" then return {ok = true, state = snapshot(player)} end
 	if type(request.id) ~= "string" or #request.id > 64 then return {ok = false, message = "Invalid item."} end
 	local ok, message
 	if request.action == "buy" or request.action == "sell" then
 		if not atShop(player) then return {ok = false, message = "Return to Ark Outfitters to buy gear or trade animals.", state = snapshot(player)} end
-		if request.action == "buy" then ok, message = Rules.buy(session.data, request.id)
+		if request.action == "buy" then ok, message = Rules.buy(session.data, request.id, request.currency)
 		else ok, message = Rules.sell(session.data, request.id, request.amount) end
+	elseif request.action == "use" then
+		ok,message=fieldKit:use(player,request.id)
+	elseif request.action == "equip" then
+		ok,message=Rules.equip(session.data,request.id)
+	elseif request.action == "robux" then
+		local offer=commerce.offers[request.id]
+		if not offer or session.temporary or not atShop(player) then return {ok=false,message="Robux offers are available at the store in the published experience."} end
+		return {ok=true,productId=offer.productId}
 	elseif request.action == "claim" then
 		ok, message = Rules.claim(session.data, request.id, os.time(), preview)
 	else
@@ -125,9 +142,12 @@ local function capture(player, animal)
 		push(player, "Move through the habitat entrance for a clear view of the animal.", "info")
 		return false
 	end
-	local captured, message = Rules.attempt(session.data, animal.id, Random.new():NextNumber(), os.time(), preview, animal.zone.mapId)
+	if (animal.flightHeight or 0)>2 then push(player,"Wait for the bird to land.","info"); return false end
+	local condition=EncounterRules.condition(now,animal.fleeUntil,animal.snaredUntil)
+	local eligible=Rules.chance(session.data,animal.id,condition)~=nil
+	local captured, message = Rules.attempt(session.data, animal.id, Random.new():NextNumber(), os.time(), preview, animal.zone.mapId,condition)
 	push(player, message, if captured then "success" else "info")
-	return captured
+	return captured, eligible and not captured
 end
 
 world.shopPrompt.Triggered:Connect(function(player) if atShop(player) then push(player, nil, "shop") end end)
@@ -227,6 +247,10 @@ end)
 
 World.startBoats(world, boatInput)
 waterSafety:start()
-Wildlife.new(world, Catalog, Rules, capture, preview):start()
+local wildlife=Wildlife.new(world, Catalog, Rules, capture, preview, function(player)
+	local p=getProfile(player); return p and p.owned
+end)
+wildlife:start()
+fieldKit:start(wildlife)
 workspace:SetAttribute("ZoReady", true)
 print("[Zo's Ark] World ready. " .. (if Store.temporary then "Studio session data only." else "Live profile saving enabled."))
