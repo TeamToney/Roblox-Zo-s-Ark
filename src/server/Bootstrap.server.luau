@@ -25,6 +25,25 @@ local action = Instance.new("RemoteFunction"); action.Name = "Action"; action.Pa
 local changed = Instance.new("RemoteEvent"); changed.Name = "Changed"; changed.Parent = remotes
 local boatInput = Instance.new("RemoteEvent"); boatInput.Name = "BoatInput"; boatInput.Parent = remotes
 local effects = Instance.new("RemoteEvent"); effects.Name = "Effects"; effects.Parent = remotes
+local musicCatalog = require(Shared.MusicCatalog)
+local musicLibrary = require(Shared.MusicLibrary).new(musicCatalog,require(Shared.MusicRules),function(keyword)
+	local parameters=Instance.new("AudioSearchParams")
+	parameters.SearchKeyword=keyword; parameters.AudioSubType=Enum.AudioSubType.Music
+	parameters.MinDuration=60; parameters.MaxDuration=360
+	local ok,pages=pcall(function() return game:GetService("AssetService"):SearchAudioAsync(parameters) end)
+	parameters:Destroy()
+	if not ok then error(pages) end
+	return pages:GetCurrentPage()
+end,os.clock)
+local musicRequests={}
+local musicRemote=Instance.new("RemoteFunction"); musicRemote.Name="MusicPlaylist"; musicRemote.Parent=remotes
+musicRemote.OnServerInvoke=function(player,style)
+	local now=os.clock()
+	if now<(musicRequests[player] or 0) then return {ok=false,retryAfter=2,message="Tuning the radio…"} end
+	musicRequests[player]=now+1
+	return musicLibrary.get(style)
+end
+Players.PlayerRemoving:Connect(function(player) musicRequests[player]=nil end)
 local world = World.build(Config)
 local sessions, positions, buckets, captureTimes, loading = {}, {}, {}, {}, {}
 local waterSafety, fieldKit, commerce, travel

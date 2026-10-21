@@ -23,7 +23,7 @@ For development builds:
 5. Follow the avenue north and go around the pointed Ark Atrium to its north entrance. Visit Ark Outfitters inside. Open **Journal** to trade animals or **Store** to buy permanent equipment upgrades.
 6. Visit Tidewater Hall in the northeast. Descend its southern boarding steps, borrow a boat, and use normal movement controls to steer; jump to leave. Sail through the eastern sea gate to find more marine wildlife. Each boat seats three players including the pilot.
 
-Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B** store, **C** challenges, **M** chart, **K** field kit, **T** travel, **H** guide; **1** sprint, **2** snare, **3** scanner. Field Kit buttons provide the same actions on touch devices. Boats are free and return to their dock after 45 seconds without occupants. Gear upgrades apply automatically, including the nonlethal tranquilizer upgrade; there is no aiming or weapon combat system yet.
+Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B** store, **C** challenges, **M** chart, **K** field kit, **T** travel, **N** music, **H** guide; **1** sprint, **2** snare, **3** scanner. Field Kit buttons provide the same actions on touch devices. Boats are free and return to their dock after 45 seconds without occupants. Gear upgrades apply automatically, including the nonlethal tranquilizer upgrade; there is no aiming or weapon combat system yet.
 
 ### Island expeditions and surprise chests
 
@@ -71,6 +71,12 @@ Teleports require an unlocked destination and a living, unseated explorer. There
 Base per-spawn rarity budgets, when matching species exist: Ark **1.5% Rare / 0.5% Epic / 0.08% Legendary**; Canopy **5% / 1.8% / 0.4%**; Moonstone **7.5% / 3% / 0.8%**. Hidden habitats multiply them by 1.8 and open seaways by 1.2. Missing rarity budgets return to common wildlife. These are spawn probabilities, not guarantees or capture odds. Five added sea routes target 15 additional animals; the new Legendary Sunburst Ray can appear in reefs and seaways. The archipelago targets 96 ordinary animals plus 2 event mantas.
 
 Click/tap a shelf item or its price tag to open that selected product. Store preview models are selectable too. The purchase card offers coins or points; it does not charge merely for selecting an item. Close any notebook panel with ×, Escape, controller Back or a click outside it. Closing works locally while a server request is pending, and a late inspection response cannot reopen it.
+
+### Ark Radio background music
+
+Open **Music** in the bottom navigation or press **N**. Choose **Lofi, Hip Hop, Pop, Club, Trap or Ambient**, then pick a track or use Previous/Next. Tracks advance and repeat through the playlist automatically. Use **Music ON/OFF**, the quick **♫ ON/OFF** button beside the tide banner, and the volume buttons. Music starts on Lofi at 25% volume. Muting affects only your background music; world sounds and other players keep their own settings. Choices survive character respawns within the session; they reset on rejoining.
+
+Each style loads up to 12 tracks through Roblox's music-library search. The server shares cached results and rate-limits searches; changing radio settings never blocks shop/capture requests or changes progression. Unavailable audio is skipped with bounded load timeouts; a failed playlist offers another style or Retry. Music fades between tracks and lowers during chest cutscenes. Live library availability, track suitability and audible playback still require Studio review. See [music maintenance](docs/MUSIC.md) to pin a reviewed playlist instead of dynamic search.
 
 ### Swimming and movement bonuses
 

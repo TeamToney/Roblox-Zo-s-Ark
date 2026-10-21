@@ -51,3 +51,14 @@ Close with X, Esc, controller Back or a click outside the panel, even while load
 Rare, Epic and Legendary wildlife can spawn on all maps and sea routes.
 Paid islands and hidden habitats have better odds. Colors are more vibrant.
 Robux map unlocks and 5-pass packs are prepared, awaiting creator Product IDs.
+
+ARK RADIO - BACKGROUND MUSIC
+Open Music in the navigation or press N.
+Choose Lofi, Hip Hop, Pop, Club, Trap or Ambient.
+Select a track, use Prev/Next, and adjust your personal volume with +/-.
+Music starts on Lofi at 25%. Use Music ON/OFF or the banner's music button.
+The playlist advances and repeats; missing tracks are skipped automatically.
+Music lowers during chest cutscenes. World sounds have separate volume.
+Tracks come from Roblox's music library; a first search can take a few seconds.
+If a playlist cannot load, try another style or use Retry after a short wait.
+Your choices last through respawns and reset on a new session.

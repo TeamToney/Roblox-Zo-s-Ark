@@ -1,5 +1,7 @@
 --!nonstrict
 local ChestCutscene = require(script.Parent.ChestCutscene)
+local MusicPlayer = require(script.Parent.MusicPlayer)
+local MusicView = require(script.Parent.MusicView)
 local GuiService = game:GetService("GuiService")
 local CurrencyHUD = require(script.Parent.CurrencyHUD)
 local TravelView = require(script.Parent.TravelView)
@@ -20,6 +22,7 @@ local Geometry = require(Shared.MapGeometry)
 local notebook = require(Shared.NotebookState).new()
 local state, currentPage, pendingTrade, requestBusy = nil, "guide", nil, false
 local render, send, open, closeNotebook
+local music
 
 local palette = {}
 for key, color in require(Shared.Colors) do palette[key]=Color3.fromRGB(unpack(color)) end
@@ -69,9 +72,10 @@ local brand = text(header, "ZO'S ARK", 23, palette.cream, UDim2.fromOffset(16, 5
 local subtitle = text(header, "EXPLORE  /  RESCUE  /  RESTORE", 10, palette.mint, UDim2.fromOffset(16, 32), UDim2.fromOffset(240, 18), true)
 local wallet = CurrencyHUD.new(header, make)
 
-local tide = make("Frame", {BackgroundColor3 = palette.card, BackgroundTransparency = 0.08, BorderSizePixel = 0, Position = UDim2.fromOffset(12, 73), Size = UDim2.new(1, -24, 0, 39)}, gui)
+local tide = make("Frame", {ZIndex=40,Active=true,BackgroundColor3 = palette.card, BackgroundTransparency = 0.08, BorderSizePixel = 0, Position = UDim2.fromOffset(12, 73), Size = UDim2.new(1, -24, 0, 39)}, gui)
 corner(tide, 9)
-local tideText = text(tide, "A whole world of wildlife is waiting.", 12, palette.mint, UDim2.fromOffset(12, 0), UDim2.new(1, -24, 1, 0), true)
+local tideText = text(tide, "A whole world of wildlife is waiting.", 12, palette.mint, UDim2.fromOffset(12, 0), UDim2.new(1, -126, 1, 0), true)
+local musicToggle=button(tide,"♫ ON",UDim2.new(1,-103,0,4),UDim2.fromOffset(95,31),function() if music then music:toggle() end end,true)
 
 local backdrop = make("TextButton", {Name="NotebookBackdrop",Text="",AutoButtonColor=false,Selectable=false,Active=true,BackgroundColor3=Color3.fromRGB(3,12,24),BackgroundTransparency=0.45,BorderSizePixel=0,Size=UDim2.fromScale(1,1),ZIndex=20}, gui)
 backdrop.Activated:Connect(function() if closeNotebook then closeNotebook() end end)
@@ -91,7 +95,7 @@ make("UIPadding", {PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8)
 
 local nav = make("Frame", {ZIndex=31,Active=true,BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.fromOffset(650, 48)}, gui)
 corner(nav, 14)
-local tabs = {{"journal", "Journal"}, {"store", "Store"}, {"challenges", "Quests"}, {"map", "Chart"}, {"travel", "Travel"}, {"kit", "Field Kit"}, {"guide", "Guide"}}
+local tabs = {{"journal", "Journal"}, {"store", "Store"}, {"challenges", "Quests"}, {"map", "Chart"}, {"travel", "Travel"}, {"kit", "Field Kit"}, {"music", "Music"}, {"guide", "Guide"}}
 local navButtons = {}
 local survival = make("Frame", {BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -98), Size = UDim2.fromOffset(650, 48)}, gui)
 corner(survival, 10)
@@ -336,6 +340,9 @@ render = function()
 	elseif currentPage == "kit" then kit()
 	elseif currentPage == "challenges" then challenges()
 	elseif currentPage == "map" then chart()
+	elseif currentPage == "music" then
+		title.Text="Ark Radio"; description.Text="Pick a style, choose a track and set your own volume. Shortcut: N."
+		if music then MusicView.render(music,shopContext()) end
 	else guide() end
 	scroll.CanvasPosition = oldPosition
 end
@@ -367,16 +374,23 @@ local function resize()
 	if not camera then return end
 	local viewport = camera.ViewportSize
 	local short = viewport.Y < 500
+	local compact = viewport.X < 560
+	local extraNav=if compact then 40 else 0
 	tide.Visible = not short
 	panel.Position = UDim2.new(0.5, 0, 0, if short then 76 else 122)
-	panel.Size = UDim2.fromOffset(math.min(690, viewport.X - 24), math.max(110, math.min(530, viewport.Y - (if short then 144 else 288))))
-	nav.Size = UDim2.fromOffset(math.min(650, viewport.X - 24), 48)
+	panel.Size = UDim2.fromOffset(math.min(690, viewport.X - 24), math.max(110, math.min(530, viewport.Y - (if short then 144 else 288)-extraNav)))
+	nav.Size = UDim2.fromOffset(math.min(730, viewport.X - 24), 48+extraNav)
 	survival.Size = UDim2.fromOffset(math.min(650, viewport.X - 24), 48)
+	survival.Position=UDim2.new(0.5,0,1,-98-extraNav)
 	toast.Size = UDim2.fromOffset(math.min(580, viewport.X - 28), 62)
+	toast.Position=UDim2.new(0.5,0,1,-166-extraNav)
 	location.Size = UDim2.fromOffset(math.min(440, viewport.X - 24), 20)
-	location.Position = UDim2.new(0.5, -math.min(440, viewport.X - 24) / 2, 1, -88)
-	local compact = viewport.X < 560
-	for _, b in navButtons do b.TextSize = if compact then 10 else 12 end
+	location.Position = UDim2.new(0.5, -math.min(440, viewport.X - 24) / 2, 1, -88-extraNav)
+	for i,tab in tabs do
+		local b=navButtons[tab[1]]; local columns=if compact then 4 else #tabs
+		b.Position=UDim2.new(((i-1)%columns)/columns,5,0,5+math.floor((i-1)/columns)*40)
+		b.Size=UDim2.new(1/columns,-10,0,38); b.TextSize=if compact then 11 else 12
+	end
 	survivalText.TextSize = if compact then 10 else 12
 	brand.TextSize = if compact then 18 else 23
 	subtitle.TextSize = if compact then 8 else 10
@@ -394,6 +408,11 @@ local remotes = ReplicatedStorage:WaitForChild("ZoRemotes", 30)
 if not remotes then description.Text = "The world could not start. Please rejoin or check the server output in Studio."; return end
 local action = remotes:WaitForChild("Action")
 local boatInput = remotes:WaitForChild("BoatInput")
+music=MusicPlayer.new(remotes:WaitForChild("MusicPlaylist"),function()
+	if music then musicToggle.Text=if music.enabled then "♫ ON" else "♫ OFF" end
+	if currentPage=="music" then render() end
+end)
+script.Destroying:Connect(function() music:destroy() end)
 send = function(verb, id, amount, currency)
 	if requestBusy then return end
 	requestBusy = true
@@ -416,6 +435,7 @@ end
 local cutscene=ChestCutscene.new(player,function(active,data)
 	if active then closeNotebook(); notebook.suspend(os.clock()) else notebook.resume(os.clock()) end
 	gui.Enabled=not active
+	music:setDucked(active)
 	if not active and data then notify(data.message,not data.trap) end
 end)
 local watched=setmetatable({},{__mode="k"})
@@ -463,7 +483,7 @@ task.spawn(function()
 	if not state then description.Text = "Your expedition is taking longer to load. Please check the server output or rejoin." end
 end)
 
-local hotkeys = {[Enum.KeyCode.J] = "journal", [Enum.KeyCode.B] = "store", [Enum.KeyCode.C] = "challenges", [Enum.KeyCode.M] = "map", [Enum.KeyCode.H] = "guide", [Enum.KeyCode.K] = "kit", [Enum.KeyCode.T] = "travel"}
+local hotkeys = {[Enum.KeyCode.J] = "journal", [Enum.KeyCode.B] = "store", [Enum.KeyCode.C] = "challenges", [Enum.KeyCode.M] = "map", [Enum.KeyCode.H] = "guide", [Enum.KeyCode.K] = "kit", [Enum.KeyCode.T] = "travel", [Enum.KeyCode.N] = "music"}
 UserInputService.InputBegan:Connect(function(input, processed)
 	if notebook.state.suspended then return end
 	if panel.Visible and (input.KeyCode==Enum.KeyCode.Escape or input.KeyCode==Enum.KeyCode.ButtonB) then closeNotebook(); return end

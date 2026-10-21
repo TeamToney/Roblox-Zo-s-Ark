@@ -37,7 +37,7 @@ Player-to-player trading needs a separate transaction design with escrow, two-pa
 
 ## Asset and map maintenance
 
-Keep provenance and licenses for imported maps, models, audio, and thumbnails. Generated placeholders have no third-party asset dependencies. Prefer known geometry and inspect imported scripts. Maintain the marker contract in `MAP_IMPORT.md` and run a full traversal pass after terrain, scale, collision, or streaming changes.
+Keep provenance and licenses for imported maps, models, audio, and thumbnails. Procedural map, animal and merchandise geometry has no third-party asset dependencies; Ark Radio uses Roblox music-library assets and credits. Prefer known geometry and inspect imported scripts. Maintain the marker contract in `MAP_IMPORT.md` and run a full traversal pass after terrain, scale, collision, or streaming changes.
 
 ## Outfitters and paid grants
 
@@ -56,3 +56,7 @@ New maps must be added to Catalog.Maps/MapOrder, with positive purchase prices, 
 WildlifeRules normalizes separate Rare/Epic/Legendary budgets, then distributes each tier by species weight. Missing tiers return their budget to ordinary species. Map ownership raises encounter opportunity through higher island budgets; it does not guarantee a prize. Hidden habitats multiply budgets by 1.8; seaways by 1.2. Keep event species out of normal pools and test every map/sea route for all three scarce tiers. SeawayLayout uses world coordinates; keep those rectangles outside private regions and within SeaBounds.
 
 CurrencyHUD animates display values only; Rules remains authoritative. Store clicks request inspection of known items with distance/visibility checks and require an explicit currency button to buy. Do not send unsolicited merchandise-open events from the server. NotebookState revisions reject stale inspection replies; close controls must remain independent of the request lock. Keep the panel/backdrop input layers, clipped scrolling area and post-close click guard to prevent clicks reaching a shelf behind the close button. Verify narrow screens and selected-card visibility in Studio whenever item categories or navigation changes.
+
+## Music
+
+See [MUSIC.md](MUSIC.md) for playlist review and optional curated tracks. Keep library terms server-selected, searches cached/rate-limited and the music remote independent of gameplay requests. Do not accept arbitrary asset IDs or searches from clients. SoundGroup volume must affect music only; stale search/load callbacks must never restart music after mute or replace a newer genre. Keep bounded load timeouts, failed-track skipping, a visible Retry path and cleanup on script destruction. Verify exact track access and suitability in a staging experience before release; cloud tests use fake library results and cannot audition audio.
