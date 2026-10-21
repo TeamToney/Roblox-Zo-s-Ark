@@ -47,6 +47,15 @@ Open the generated place in Studio and use a fresh Play session. The UI should s
 - Verify genuine capture holds on keyboard, touch and controller, including latency, interrupted holds, target movement, flight takeoff/landing, snared animals and multiple players. Direct Triggered calls without a sufficiently recent hold, stale holds, retry spam and through-wall captures must fail. Starter rabbit odds should be about 72%; Tier 4 tiger about 40% before aid. Check the balance through real play rather than claiming unit tests establish fun/difficulty.
 - Create the three new Developer Products only in staging and follow ROBUX_SETUP.md. Test map grants and 5-pass delivery, cancellation, retries, duplicate-owned compensation and reconnect; default Studio temporary mode must never acknowledge a paid receipt. No real Marketplace execution has occurred in this cloud.
 
+## Outdoor forestry — Studio checks still unrun
+
+Six pure layout cases verify forest density/budgets, deterministic placement, dry ground and path/indoor exclusions, key-marker clearings, trunk spacing and central animal clearings. They do not render trees or test Roblox streaming/physics.
+
+- Walk through the Ark's exterior groves and both southern courtyards; inspect broadleaf branching, birch bark, palms, pines, varied foliage, ferns, flowers, moss and fallen logs. Unlock and visit Canopy/Moonstone to confirm tropical versus cooler woodland, grass floors and dry-ground placement. Check the OutdoorForestry folder attributes: 160/106/155 trees and 180 undergrowth props on each island.
+- Traverse all entrances, paved galleries, Outfitters, the challenge board, spawn, seven checkpoints, twelve chests, docks and shore stairs. Check nearby canopies at normal third-person camera distance and during chest scenes. Paths and marker approaches must remain readable; scenery must not cover prompts or hide animals excessively. Preserve the main floor-plan landmarks.
+- Miss captures near trunks/ferns and pursue running/flying/swimming animals with two clients. All forestry parts must have CanCollide, CanTouch and CanQuery false. Character/wildlife paths, scanner signals, rescue visibility checks, traps, boat routes and movement bonuses must still work. No foliage should support a character or provide a platform over a locked boundary.
+- Profile startup, memory, replication, frame time, shadows and streaming on target phones/tablets and desktop. Models stream individually; no forestry update loop should appear. Trees/low plants must return correctly after moving among islands and respawning. Tune bounded density if necessary. Actual Studio rendering, navigation and device performance remain untested in the cloud.
+
 ## Ark Radio — Studio checks still unrun
 
 The music suite checks all genre entries, asset/metadata normalization, duplicate/invalid IDs, playlist limits, wraparound, failed-track exhaustion, stale callback guards, volume limits, cache sharing, in-flight requests, search spacing, service failure/retry and pinned playlists. These use fake library responses; they do not execute AssetService, content permissions, Sound playback or GUI input.

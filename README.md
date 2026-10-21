@@ -72,6 +72,12 @@ Base per-spawn rarity budgets, when matching species exist: Ark **1.5% Rare / 0.
 
 Click/tap a shelf item or its price tag to open that selected product. Store preview models are selectable too. The purchase card offers coins or points; it does not charge merely for selecting an item. Close any notebook panel with ×, Escape, controller Back or a click outside it. Closing works locally while a server request is pending, and a late inspection response cannot reopen it.
 
+### Outdoor forests
+
+The default archipelago has 421 trees: 160 around the Ark, 106 on Canopy Reach and 155 on Moonstone Isle. Broadleaf and birch groves surround the Ark, tropical crowns and palms fill Canopy habitats, and cooler pines/birches characterize Moonstone. Each island also has 180 low plants or props: ferns, wildflowers, mossy stones and fallen logs. Sizes, canopy shapes and greens vary while retaining Roblox-style primitive models.
+
+Planting follows dry ground and keeps paved routes, indoor rooms, shore steps, docks, checkpoints, chests, the spawn and Outfitters clear. Habitat centers and doorway-to-center lanes stay open for animal chases. Vegetation is decorative: it has no collision, touch or query surfaces that can block wildlife navigation or capture checks. Models stream individually and have no per-frame animation loop. Visual framing, streaming and mobile performance still need Studio review.
+
 ### Ark Radio background music
 
 Open **Music** in the bottom navigation or press **N**. Choose **Lofi, Hip Hop, Pop, Club, Trap or Ambient**, then pick a track or use Previous/Next. Tracks advance and repeat through the playlist automatically. Use **Music ON/OFF**, the quick **♫ ON/OFF** button beside the tide banner, and the volume buttons. Music starts on Lofi at 25% volume. Muting affects only your background music; world sounds and other players keep their own settings. Choices survive character respawns within the session; they reset on rejoining.

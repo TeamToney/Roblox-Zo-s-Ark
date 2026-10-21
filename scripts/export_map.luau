@@ -3,6 +3,7 @@ local Layout = require("../src/shared/MapLayout")
 local Geometry = require("../src/shared/MapGeometry")
 local Config = require("../src/shared/Config")
 local Islands = require("../src/shared/IslandLayouts")
+local Forestry = require("../src/shared/ForestryLayout")
 local function encode(value: any): string
 	local kind = type(value)
 	if kind == "string" then
@@ -31,6 +32,6 @@ local islands = {}
 for _, plan in Islands.Islands do
 	local segments = {}
 	for _, room in plan.Rooms do for _, line in Geometry.walls(room) do table.insert(segments, line) end end
-	table.insert(islands, {layout = plan, walls = segments, floorTiles = Geometry.floorTiles(plan)})
+	table.insert(islands, {layout = plan, walls = segments, floorTiles = Geometry.floorTiles(plan), forestry = Forestry.generate(plan,Geometry)})
 end
-print(encode({layout = Layout, walls = walls, floorTiles = Geometry.floorTiles(Layout), islands = islands, travelRadius = Config.MaxWorldRadius, seaBounds = Config.SeaBounds}))
+print(encode({layout = Layout, walls = walls, floorTiles = Geometry.floorTiles(Layout), islands = islands, forestry = Forestry.generate(Layout,Geometry), travelRadius = Config.MaxWorldRadius, seaBounds = Config.SeaBounds}))

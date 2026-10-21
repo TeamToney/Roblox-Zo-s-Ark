@@ -2,6 +2,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZoShared")
 local Layout = require(Shared.MapLayout)
 local Geometry = require(Shared.MapGeometry)
+local Forestry = require(script.Parent.Forestry)
 
 local PlanWorld = {}
 local palette = {}
@@ -101,23 +102,8 @@ function PlanWorld.build(world, part, label)
 		local sign = part(map, zone.name .. "Sign", Vector3.new(1, 4, 1), CFrame.new(point(signX, signY, if zone.extension then waterY + 1 else floorY + 3)), palette.navy)
 		if zone.extension then sign.Shape = Enum.PartType.Ball; sign.Size = Vector3.new(4, 4, 4); sign.Color = palette.mint end
 		if not zone.obscure then label(sign, string.upper(zone.name), 5, 280) else sign:Destroy() end
-		if not marine then
-			-- Vegetation hugs the borders and leaves the middle of each habitat clear.
-			for index = 0, 3 do
-				local tx = if index % 2 == 0 then zone.rect[1] + 3 else zone.rect[3] - 3
-				local ty = zone.rect[2] + 15 + math.floor(index / 2) * (zone.rect[4] - zone.rect[2] - 30)
-				local p = point(tx, ty)
-				if zone.habitat == "summit" then
-					local rock = part(map, "HabitatRock", Vector3.new(7, 6, 7), CFrame.new(p + Vector3.new(0, 2.5, 0)), palette.summit, Enum.Material.Slate, Enum.PartType.Ball)
-					rock.CanQuery = true
-				else
-					part(map, "HabitatTree", Vector3.new(1.5, 12, 1.5), CFrame.new(p + Vector3.new(0, 6, 0)), palette.wood, Enum.Material.Wood)
-					local crown = part(map, "Canopy", Vector3.new(9, 10, 9), CFrame.new(p + Vector3.new(0, 13, 0)), if zone.habitat == "jungle" then palette.jungle else palette.meadow, Enum.Material.Grass, Enum.PartType.Ball)
-					crown.CanCollide = false; crown.CanQuery = false
-				end
-			end
-		end
 	end
+	Forestry.build(Layout,map,part)
 
 	plate(map, "LowBoardingDock", Layout.Dock, dockY, 1.2, palette.wood, Enum.Material.WoodPlanks)
 	local function steps(rect, high, low, count)

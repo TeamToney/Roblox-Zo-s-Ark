@@ -2,6 +2,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZoShared")
 local Islands = require(Shared.IslandLayouts)
 local Geometry = require(Shared.MapGeometry)
+local Forestry = require(script.Parent.Forestry)
 local colors={}
 for key,value in require(Shared.Colors) do colors[key]=Color3.fromRGB(unpack(value)) end
 local IslandWorld = {}
@@ -24,7 +25,8 @@ function IslandWorld.build(world, part, label)
 		for _, room in plan.Rooms do
 			local roomModel = Instance.new("Model"); roomModel.Name = room.name; roomModel.Parent = model
 			local tint = if room.kind == "jungle" then colors.jungle elseif room.kind == "meadow" then colors.meadow elseif room.kind == "summit" then colors.summit else colors.room
-			if room.rect then plate(roomModel, "RoomFloor", room.rect, plan.FloorY + 0.1, 0.2, tint, Enum.Material.Concrete)
+			local grass=room.kind=="meadow" or room.kind=="jungle"
+			if room.rect then plate(roomModel, "RoomFloor", room.rect, plan.FloorY + 0.1, 0.2, tint, if grass then Enum.Material.Grass else Enum.Material.Concrete)
 			else
 				local low, high = math.huge, -math.huge
 				for _, p in room.polygon do low = math.min(low, p[2]); high = math.max(high, p[2]) end
@@ -43,19 +45,8 @@ function IslandWorld.build(world, part, label)
 			local x, y = Geometry.center(zone.rect)
 			local a, b = point(zone.rect[1], zone.rect[2]), point(zone.rect[3], zone.rect[4])
 			table.insert(world.zones, {id = zone.id, name = zone.name, habitat = zone.habitat, center = point(x, y, if marine then plan.WaterY else plan.FloorY), bounds = {minX = a.X, maxX = b.X, minZ = a.Z, maxZ = b.Z}, radius = math.min(b.X - a.X, b.Z - a.Z) / 2, marine = marine, count = zone.count, obscure = zone.obscure == true, mapId = plan.Id})
-			if not marine then
-				for _, corner in {{zone.rect[1] + 10, zone.rect[2] + 10}, {zone.rect[3] - 10, zone.rect[4] - 10}} do
-					local base = point(corner[1], corner[2])
-					if zone.habitat == "summit" then
-						part(model, "MoonstoneRock", Vector3.new(5, 4, 5), CFrame.new(base + Vector3.new(0, 1.8, 0)), Color3.fromRGB(138, 155, 165), Enum.Material.Slate, Enum.PartType.Ball)
-					else
-						part(model, "IslandTree", Vector3.new(1, 9, 1), CFrame.new(base + Vector3.new(0, 4.5, 0)), Color3.fromRGB(126, 91, 58), Enum.Material.Wood)
-						local crown = part(model, "IslandCanopy", Vector3.new(7, 8, 7), CFrame.new(base + Vector3.new(0, 11, 0)), colors.jungle, Enum.Material.Grass, Enum.PartType.Ball)
-						crown.CanCollide = false; crown.CanQuery = false
-					end
-				end
-			end
 		end
+		Forestry.build(plan,model,part)
 		for _, exit in plan.ShoreExits do
 			local center, outward = point(exit.x, exit.y), Vector3.new(exit.dx, 0, exit.dy)
 			local cf = CFrame.lookAt(center, center + outward)

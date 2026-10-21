@@ -62,3 +62,9 @@ Music lowers during chest cutscenes. World sounds have separate volume.
 Tracks come from Roblox's music library; a first search can take a few seconds.
 If a playlist cannot load, try another style or use Retry after a short wait.
 Your choices last through respawns and reset on a new session.
+
+OUTDOOR FORESTRY
+421 trees now cover the three islands, with varied leafy groves, birches,
+tropical palms and mountain pines. Look for ferns, flowers, mossy stones and logs.
+Habitat centers, paths, doorways, chests, checkpoints and shore approaches stay clear.
+The forest is scenery; it does not block running animals or rescue checks.

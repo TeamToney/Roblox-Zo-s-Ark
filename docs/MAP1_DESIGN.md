@@ -39,6 +39,10 @@ Small partitions are consolidated where needed for movement and animal encounter
 
 Run `bash scripts/check.sh` to validate the source, map geometry and routes, regenerate `docs/map-1-layout.svg`, and build `build/ZosArk.rbxlx`. The layout JSON in `build/map-1-layout.json` is a generated export for inspection, not an authored source file.
 
+## Outdoor forests
+
+The Ark now has 160 broadleaf, birch, pine and palm trees plus 180 ferns, flower clumps, mossy stones and logs. ForestryLayout derives placement from the existing dry footprint, rooms, courtyards, corridors and markers. Forest groups leave the entrance, central avenue, Atrium, marine wing, shore steps and habitat gathering areas clear. Scenery has no collision/query surfaces to interfere with animal movement or rescue checks. This replaces the former sparse corner trees without changing the floor-plan trace.
+
 ## Remaining Studio work
 
 The cloud checks verify the layout and source build, not Roblox physics. In Studio, test walking every route, the north atrium entrance, wall/camera behavior, habitat spawning, boat turning and boarding, the sea gate, swimming exits, streaming, and phone/tablet chart layout. Tune widths and heights from those results before publishing.

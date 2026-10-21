@@ -22,3 +22,7 @@ The default world targets 96 ordinary animals and two event mantas, including 15
 ## Purchased entry
 
 Canopy Reach and Moonstone Isle require permanent access purchased through Travel, using either coins or Ark Points, or configured Robux products. Shared sea routes stay free; private island territories include a 48-stud approach around their bounds. Server entry/capture/chest/checkpoint/respawn checks prevent bypass by walking, swimming, boat passenger seats or a forged request. The chart labels locked destinations and optional paid teleports require prior ownership. See README for prices and rarity budgets. Future plans must register a paid Catalog.Maps entry and valid landing.
+
+## Woodland
+
+Canopy Reach has 106 tropical broadleaf/palm trees and Moonstone has 155 mixed trees, emphasizing pines and birches. Both have 180 undergrowth props and grass in meadow/jungle habitat rooms. Placement follows ForestryLayout's dry-ground, corridor, room and marker exclusions; the footprints and north-up orientation remain intact. These are decorative, individually streamed models with no collision/query surfaces or ongoing animation task. Inspect actual canopy framing, wildlife visibility and mobile performance in Studio.
