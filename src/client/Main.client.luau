@@ -1,4 +1,6 @@
 --!nonstrict
+local CurrencyHUD = require(script.Parent.CurrencyHUD)
+local TravelView = require(script.Parent.TravelView)
 local ShopView = require(script.Parent.ShopView)
 local ChestEffects = require(script.Parent.ChestEffects)
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -14,12 +16,9 @@ local Layout = require(Shared.MapLayout)
 local Islands = require(Shared.IslandLayouts)
 local Geometry = require(Shared.MapGeometry)
 
-local palette = {
-	ink = Color3.fromRGB(17, 36, 46), card = Color3.fromRGB(30, 56, 64),
-	soft = Color3.fromRGB(42, 70, 75), mint = Color3.fromRGB(145, 232, 191),
-	cream = Color3.fromRGB(249, 241, 217), muted = Color3.fromRGB(173, 197, 194),
-	gold = Color3.fromRGB(255, 207, 116), coral = Color3.fromRGB(250, 151, 132),
-}
+local palette = {}
+for key, color in require(Shared.Colors) do palette[key]=Color3.fromRGB(unpack(color)) end
+
 local function make(class, properties, parent)
 	local instance = Instance.new(class)
 	for key, value in properties do instance[key] = value end
@@ -44,7 +43,7 @@ local function button(parent, content, position, dimensions, callback, subdued)
 		BackgroundColor3 = if subdued then palette.soft else palette.mint,
 		TextColor3 = if subdued then palette.cream else palette.ink,
 		Font = Enum.Font.GothamBold, TextSize = 13, BorderSizePixel = 0,
-		AutoButtonColor = true, Selectable = true,
+		AutoButtonColor = true, Selectable = true, TextWrapped = true,
 	}, parent)
 	corner(b, 9); b.Activated:Connect(callback)
 	return b
@@ -63,10 +62,7 @@ local header = make("Frame", {BackgroundColor3 = palette.ink, BackgroundTranspar
 corner(header)
 local brand = text(header, "ZO'S ARK", 23, palette.cream, UDim2.fromOffset(16, 5), UDim2.fromOffset(200, 29), true)
 local subtitle = text(header, "EXPLORE  /  RESCUE  /  RESTORE", 10, palette.mint, UDim2.fromOffset(16, 32), UDim2.fromOffset(240, 18), true)
-local balance = text(header, "Opening your journal…", 14, palette.gold, UDim2.new(1, -240, 0, 5), UDim2.fromOffset(224, 25), true)
-balance.TextXAlignment = Enum.TextXAlignment.Right
-local progress = text(header, "", 12, palette.muted, UDim2.new(1, -240, 0, 30), UDim2.fromOffset(224, 20))
-progress.TextXAlignment = Enum.TextXAlignment.Right
+local wallet = CurrencyHUD.new(header, make)
 
 local tide = make("Frame", {BackgroundColor3 = palette.card, BackgroundTransparency = 0.08, BorderSizePixel = 0, Position = UDim2.fromOffset(12, 73), Size = UDim2.new(1, -24, 0, 39)}, gui)
 corner(tide, 9)
@@ -88,7 +84,7 @@ make("UIPadding", {PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8)
 
 local nav = make("Frame", {BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.fromOffset(650, 48)}, gui)
 corner(nav, 14)
-local tabs = {{"journal", "Journal"}, {"store", "Store"}, {"challenges", "Challenges"}, {"map", "Chart"}, {"kit", "Field Kit"}, {"guide", "Guide"}}
+local tabs = {{"journal", "Journal"}, {"store", "Store"}, {"challenges", "Quests"}, {"map", "Chart"}, {"travel", "Travel"}, {"kit", "Field Kit"}, {"guide", "Guide"}}
 local navButtons = {}
 local survival = make("Frame", {BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -98), Size = UDim2.fromOffset(650, 48)}, gui)
 corner(survival, 10)
@@ -113,7 +109,7 @@ local function notify(message, success)
 end
 
 local state, currentPage, pendingTrade, requestBusy = nil, "guide", nil, false
-local render, send
+local render, send, open
 local markers = {}
 local function card(height)
 	local frame = make("Frame", {BackgroundColor3 = palette.card, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, height)}, scroll)
@@ -161,7 +157,7 @@ local function shopContext()
 end
 local function store()
 	title.Text = "Ark Outfitters"
-	description.Text = if state.atShop then "Choose coins or Ark Points. Spending points can lower your level." else "Browse the collection. Visit the walk-in Outfitters store in Ark Atrium to buy or trade."
+	description.Text = if state.atShop then "Choose coins or Ark Points. Spending points can lower your level." else "Tap an item model or shelf price tag to select it. Visit Outfitters to buy or trade."
 	ShopView.render(shopContext())
 end
 local function kit()
@@ -207,6 +203,11 @@ local function challenges()
 	button(frame, if claimed then "Prize claimed" else "Claim tide prize", UDim2.fromOffset(14, 147), UDim2.fromOffset(180, 30), function() send("claim", "event") end, not state.event.active or captures < Config.EventGoal or claimed)
 end
 
+local function mapSignature(count)
+	local signature=count..":"..state.respawnCheckpoint
+	for _,id in Catalog.MapOrder do signature..=":"..tostring(state.profile.maps[id]==true) end
+	return signature
+end
 local function chart()
 	title.Text = "Your archipelago chart"
 	description.Text = "Ark Sanctuary • Canopy Reach • Moonstone Isle • North is up."
@@ -263,11 +264,11 @@ local function chart()
 			for _, cp in plan.Checkpoints do
 				if state.profile.exploration.checkpoints[cp.id] then
 					local x, z = Geometry.world(plan.Source, cp.x, cp.y)
-					site("CP", x, z, if state.profile.exploration.activeCheckpoint == cp.id then palette.gold else palette.mint)
+					site("CP", x, z, if state.respawnCheckpoint == cp.id then palette.gold else palette.mint)
 				end
 			end
 			if plan.Dock and plan.Dock.x then
-				local x, z = Geometry.world(plan.Source, plan.Dock.x, plan.Dock.y); site(plan.Name, x, z, palette.mint)
+				local x, z = Geometry.world(plan.Source, plan.Dock.x, plan.Dock.y); site((if state.profile.maps[plan.Id] then "" else "LOCKED • ")..plan.Name, x, z, if state.profile.maps[plan.Id] then palette.mint else palette.coral)
 			else
 				local x, z = Geometry.world(plan.Source, Layout.Hub[1], Layout.Hub[2]); site("ARK", x, z, palette.gold)
 			end
@@ -283,10 +284,10 @@ local function chart()
 	end
 	local dot = make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(8, 8), BackgroundColor3 = palette.coral, BorderSizePixel = 0, ZIndex = 5}, plot); corner(dot, 8)
 	local count = 0; for _ in state.profile.exploration.checkpoints do count += 1 end
-	markers = {player = dot, extent = extent, centerX = cx, centerZ = cz, signature = count .. ":" .. state.profile.exploration.activeCheckpoint}
+	markers = {player = dot, extent = extent, centerX = cx, centerZ = cz, signature = mapSignature(count)}
 	text(plot, "N ↑", 12, palette.cream, UDim2.fromOffset(2, 2), UDim2.fromOffset(50, 22), true).ZIndex = 4
-	section("Sail the three islands", "The Ark is west. Canopy Reach lies northeast; Moonstone Isle lies southeast. Both have free boats and landing checkpoints. CP marks discovered checkpoints; gold is your active respawn. EXIT marks shore stairs.", 145)
-	section("Search beyond the main galleries", "Rare and Legendary animals live in out-of-the-way rooms, alcoves and coves. Their habitats and surprise chests are not marked. Activate checkpoints and check the expedition board for island challenges.", 140)
+	section("Sail the three islands", "The Ark is west. Canopy Reach lies northeast; Moonstone Isle lies southeast. Unlock their permanent entry in Travel, then sail for free or buy an optional teleport. CP marks discovered checkpoints; gold is your active respawn. EXIT marks shore stairs.", 145)
+	section("Search beyond the main galleries", "Rare, Epic and Legendary animals can appear on all islands and sea routes. Paid islands and secluded habitats improve their odds; hidden habitats and chests are not marked. Activate checkpoints and check the expedition board for island challenges.", 140)
 end
 
 local function guide()
@@ -299,11 +300,11 @@ local function guide()
 	section("03  /  Prepare an expedition", "Buy the Ranger Net for larger animals. A Reef Snorkel opens more sea encounters. Rescue and water gear are automatic. Buy with coins or points; open Field Kit to activate supplies and equip cosmetics.", 126)
 	section("04  /  Sail beyond the base", if hybrid then "Tidewater Hall is in the northeast. Descend the boarding steps in its southern pool to reach a free boat, then sail through the eastern sea gate. Swim or sail close to marine animals." else "Find your world's expedition dock and borrow a free boat. Sit to steer and jump to leave. Swim or sail close to marine animals to rescue them.", 148)
 	section("05  /  Follow the Aurora Tide", "An eight-minute event returns every thirty minutes. Rescue three Aurora Mantas at the reef, then claim a special title and bonus rewards on the expedition board.", 126)
-	local checkpoint = Catalog.Checkpoints[state.profile.exploration.activeCheckpoint]
-	section("Island expeditions & checkpoints", "Sail northeast to Canopy Reach or southeast to Moonstone Isle. Activate checkpoints to save your respawn, then finish island challenges on the expedition board. Current respawn: " .. (if checkpoint then checkpoint.name else "Ark southern entrance") .. ".", 155)
+	local checkpoint = Catalog.Checkpoints[state.respawnCheckpoint]
+	section("Island access & checkpoints", "Open Travel to unlock Canopy Reach or Moonstone Isle with coins, points or configured Robux offers. Then sail there or buy a teleport. Activate checkpoints to save your respawn, then finish island challenges on the expedition board. Current respawn: " .. (if checkpoint then checkpoint.name else "Ark southern entrance") .. ".", 155)
 	section("Surprise chests", "Each chest is free to open once per explorer per UTC day. Find coins, hidden animals, gear, sprint boosts or snares; some chests trap you, remove points or kill your character. Death returns you to your checkpoint. Your collected animals and gear stay.", 160)
 	section("Chase, track & rescue", "Nervous animals run; birds briefly fly away, then land. Sprint to keep up, use camouflage to approach, or place a gentle snare. The scanner reveals nearby wildlife. Desktop: 1 sprint, 2 snare, 3 scan; Field Kit works on touch too.", 166)
-	section("Hidden wildlife", "Hold Rescue for 0.25 seconds. Common wildlife can wander through connected rooms. Look beyond the main galleries for Rare and Legendary wildlife: secluded rooms, coral alcoves and hidden coves.", 138)
+	section("Hidden wildlife", "Hold Rescue for 0.65–1.2 seconds, depending on rarity. Common wildlife can wander through connected rooms. Rare, Epic and Legendary wildlife can appear on every island and sea route. Paid islands and secluded habitats offer better odds.", 138)
 	section("Swim safely", "Start with 30 seconds of endurance. A snorkel gives 60s; the diving kit gives 180s. A life jacket adds 60s to either. Rest on land or in a boat to recover. At zero endurance, health drains: look for marked shore steps, orange life rings and green first-aid floats.", 176)
 	section("Water recovery pickups", "Life rings restore 15s and pause fatigue for 20s. First-aid floats restore 25 health and 20s of endurance. Hold their nearby prompt while swimming. Used pickups return after 90 seconds.", 144)
 	section("Make every journey count", "Every 10 walking steps earns 2 coins + 1 Ark Point. Every 10 swimming strokes earns 3 coins + 2 points. Boats earn distance milestones, not step or stroke bonuses. The 500-stud exploration reward and daily challenges still apply.", 152)
@@ -313,19 +314,19 @@ end
 render = function()
 	if not state then return end
 	local oldPosition = scroll.CanvasPosition
-	balance.Text = number(state.profile.coins) .. " COINS   •   LV " .. state.level
-	progress.Text = number(state.profile.points) .. " Ark Points" .. (if state.temporary then "  /  SESSION" else "")
-	if state.profile.titles[Config.EventTitle] then subtitle.Text = "AURORA VOYAGER" end
+	wallet:update(state.profile.coins,state.profile.points)
+	subtitle.Text = (if state.profile.titles[Config.EventTitle] then "AURORA VOYAGER" else "LEVEL "..state.level)..(if state.temporary then " • SESSION" else " • EXPLORER")
 	for key, b in navButtons do b.BackgroundColor3 = if key == currentPage and panel.Visible then palette.soft else palette.ink end
 	if not panel.Visible then return end
 	-- The floor plan is static. Reuse it while fresh snapshots update the HUD
 	-- and the separate player dot, rather than rebuilding hundreds of lines.
 	local visited = 0; for _ in state.profile.exploration.checkpoints do visited += 1 end
-	if currentPage == "map" and markers.player and markers.player.Parent and markers.signature == visited .. ":" .. state.profile.exploration.activeCheckpoint then return end
+	if currentPage == "map" and markers.player and markers.player.Parent and markers.signature == mapSignature(visited) then return end
 	for _, child in scroll:GetChildren() do if child:IsA("GuiObject") then child:Destroy() end end
 	markers = {}
 	if currentPage == "journal" then journal()
 	elseif currentPage == "store" then store()
+	elseif currentPage == "travel" then title.Text="Islands & teleports"; description.Text="Unlock new expeditions. Sailing is free after unlocking; teleports are optional."; TravelView.render(shopContext())
 	elseif currentPage == "kit" then kit()
 	elseif currentPage == "challenges" then challenges()
 	elseif currentPage == "map" then chart()
@@ -333,7 +334,7 @@ render = function()
 	scroll.CanvasPosition = oldPosition
 end
 
-local function open(page)
+open = function(page)
 	pendingTrade = nil
 	if currentPage ~= page then scroll.CanvasPosition = Vector2.zero end
 	currentPage = page; panel.Visible = true; render()
@@ -366,12 +367,9 @@ local function resize()
 	brand.TextSize = if compact then 18 else 23
 	subtitle.TextSize = if compact then 8 else 10
 	subtitle.Size = UDim2.fromOffset(if compact then 140 else 240, 18)
-	balance.Size = UDim2.fromOffset(if compact then 176 else 224, 25)
-	balance.Position = UDim2.new(1, if compact then -188 else -240, 0, 5)
-	balance.TextSize = if compact then 12 else 14
-	progress.Size = UDim2.fromOffset(if compact then 176 else 224, 20)
-	progress.Position = UDim2.new(1, if compact then -188 else -240, 0, 30)
-	progress.TextSize = if compact then 10 else 12
+	wallet:resize(viewport.X)
+	brand.Size = UDim2.fromOffset(if compact then 105 else 200,29)
+	subtitle.Size = UDim2.fromOffset(if compact then 108 else 240,18)
 	if state and currentPage == "map" then markers = {}; render() end
 end
 resize()
@@ -402,7 +400,7 @@ remotes:WaitForChild("Effects").OnClientEvent:Connect(function(data)
 end)
 remotes:WaitForChild("Changed").OnClientEvent:Connect(function(update)
 	if update.state then state = update.state; state.receivedAt = os.clock() end
-	if update.kind == "shop" then open("store") elseif update.kind == "challenges" then open("challenges") else render() end
+	if update.kind == "merchandise" then ShopView.selected=update.detail; ShopView.category="All"; scroll.CanvasPosition=Vector2.zero; open("store") elseif update.kind=="travel" then open("travel") elseif update.kind == "shop" then ShopView.selected=nil; open("store") elseif update.kind == "challenges" then open("challenges") else render() end
 	notify(update.message, update.kind == "success")
 end)
 task.spawn(function()
@@ -414,7 +412,7 @@ task.spawn(function()
 	if not state then description.Text = "Your expedition is taking longer to load. Please check the server output or rejoin." end
 end)
 
-local hotkeys = {[Enum.KeyCode.J] = "journal", [Enum.KeyCode.B] = "store", [Enum.KeyCode.C] = "challenges", [Enum.KeyCode.M] = "map", [Enum.KeyCode.H] = "guide", [Enum.KeyCode.K] = "kit"}
+local hotkeys = {[Enum.KeyCode.J] = "journal", [Enum.KeyCode.B] = "store", [Enum.KeyCode.C] = "challenges", [Enum.KeyCode.M] = "map", [Enum.KeyCode.H] = "guide", [Enum.KeyCode.K] = "kit", [Enum.KeyCode.T] = "travel"}
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
 	local kitKeys={[Enum.KeyCode.One]="speedBoost",[Enum.KeyCode.Two]="animalTrap",[Enum.KeyCode.Three]="tracker"}

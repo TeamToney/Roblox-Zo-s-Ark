@@ -12,6 +12,7 @@ local WaterSafety = require(script.Parent.WaterSafety)
 local ExpeditionWorld = require(script.Parent.ExpeditionWorld)
 local FieldKit = require(script.Parent.FieldKit)
 local EncounterRules = require(Shared.EncounterRules)
+local TravelRules = require(Shared.TravelRules).new(Catalog)
 local Store = require(script.Parent.ProfileStore).new(Rules, Config, {
 	openStore = function(name) return game:GetService("DataStoreService"):GetDataStore(name) end,
 	temporary = RunService:IsStudio() and workspace:GetAttribute("ZoUseLiveDataInStudio") ~= true,
@@ -26,7 +27,7 @@ local boatInput = Instance.new("RemoteEvent"); boatInput.Name = "BoatInput"; boa
 local effects = Instance.new("RemoteEvent"); effects.Name = "Effects"; effects.Parent = remotes
 local world = World.build(Config)
 local sessions, positions, buckets, captureTimes, loading = {}, {}, {}, {}, {}
-local waterSafety, fieldKit, commerce
+local waterSafety, fieldKit, commerce, travel
 local closing = false
 local preview = RunService:IsStudio() and workspace:GetAttribute("ZoPreviewEvent") ~= false
 
@@ -51,11 +52,11 @@ local function snapshot(player)
 		local value, goal = Rules.expeditionProgress(session.data, id)
 		expeditions[id] = {value = value, goal = goal, claimed = session.data.exploration.claimed[id] == true}
 	end
-	return {kit = if fieldKit then fieldKit:snapshot(player) else nil, offers = if commerce then commerce.offers else {}, profile = session.data, expeditions = expeditions, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
+	return {respawnCheckpoint = if travel and travel:respawn(session.data) then session.data.exploration.activeCheckpoint else "", currentMap = if travel and healthyRoot(player) then travel:mapAt(healthyRoot(player).Position) else "ark", kit = if fieldKit then fieldKit:snapshot(player) else nil, offers = if commerce then commerce.offers else {}, profile = session.data, expeditions = expeditions, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
 end
 
-local function push(player, message, kind)
-	if player.Parent == Players then changed:FireClient(player, {state = snapshot(player), message = message, kind = kind}) end
+local function push(player, message, kind, detail)
+	if player.Parent == Players then changed:FireClient(player, {state = snapshot(player), message = message, kind = kind, detail = detail}) end
 end
 
 local function getProfile(player)
@@ -87,7 +88,13 @@ end, push, function(player) return fieldKit:boosted(player) end)
 ExpeditionWorld.build(world, Catalog, Rules, function(player)
 	local session = sessions[player]
 	return if session and not session.closed and not session.lost and not closing then session.data else nil
-end, push, effects)
+end, push, effects, function(player,id) return TravelRules.canAccess(getProfile(player),id) end)
+
+travel = require(script.Parent.Travel).new(world,Catalog,Config,TravelRules,getProfile,push,function(player)
+	positions[player]=nil
+	local record=waterSafety.records[player]
+	if record then record.position=nil; record.mode=nil end
+end)
 
 local function allow(player)
 	local now = os.clock()
@@ -111,13 +118,21 @@ action.OnServerInvoke = function(player, request)
 		if not atShop(player) then return {ok = false, message = "Return to Ark Outfitters to buy gear or trade animals.", state = snapshot(player)} end
 		if request.action == "buy" then ok, message = Rules.buy(session.data, request.id, request.currency)
 		else ok, message = Rules.sell(session.data, request.id, request.amount) end
+	elseif request.action == "unlock" then
+		ok,message=TravelRules.unlock(session.data,request.id,request.currency)
+	elseif request.action == "teleport" then
+		ok,message=travel:teleport(player,request.id,request.currency)
 	elseif request.action == "use" then
+		local root=healthyRoot(player)
+		if not root or not travel:allowedPosition(player,root.Position) then return {ok=false,message="Return to an unlocked island first."} end
 		ok,message=fieldKit:use(player,request.id)
 	elseif request.action == "equip" then
 		ok,message=Rules.equip(session.data,request.id)
 	elseif request.action == "robux" then
 		local offer=commerce.offers[request.id]
-		if not offer or session.temporary or not atShop(player) then return {ok=false,message="Robux offers are available at the store in the published experience."} end
+		local product=Catalog.Products[request.id]
+		local travelProduct=product and (product.mapId or product.stock=="teleportPass")
+		if not offer or session.temporary or (not travelProduct and not atShop(player)) then return {ok=false,message="Robux offers are available at the store in the published experience."} end
 		return {ok=true,productId=offer.productId}
 	elseif request.action == "claim" then
 		ok, message = Rules.claim(session.data, request.id, os.time(), preview)
@@ -129,10 +144,11 @@ end
 
 local function capture(player, animal)
 	local session = sessions[player]; local root = healthyRoot(player)
-	if not session or session.lost or closing or not root then return false end
+	if not session or session.lost or session.closed or closing or not root then return false end
+	if not travel:allowed(player,animal.zone.mapId or "ark") or not travel:allowedPosition(player,root.Position) or not travel:allowedPosition(player,animal.root.Position) then push(player,"Unlock this island in Travel to rescue its wildlife.","travel"); return false end
 	if not animal.alive or not animal.model.Parent or (root.Position - animal.root.Position).Magnitude > Config.CaptureDistance then return false end
 	local now = os.clock()
-	if now - (captureTimes[player] or -math.huge) < Config.CaptureCooldown then return false end
+	if now - (captureTimes[player] or -math.huge) < Config.CaptureCooldown then push(player,"Catch your breath for a moment, then try another rescue.","info"); return false end
 	captureTimes[player] = now
 	local visibility = RaycastParams.new(); visibility.FilterType = Enum.RaycastFilterType.Exclude; visibility.IgnoreWater = true
 	local excluded = {world.actors, world.boats}
@@ -150,6 +166,20 @@ local function capture(player, animal)
 	return captured, eligible and not captured
 end
 
+world.onMerchandise=function(player,id,display)
+	local root=healthyRoot(player)
+	if not allow(player) or not atShop(player) or not root or (root.Position-display:GetPivot().Position).Magnitude>30 then return end
+	local params=RaycastParams.new(); params.FilterType=Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances={player.Character}; params.IgnoreWater=true; params.RespectCanCollide=true
+	local visible=false
+	for _,part in display:GetDescendants() do
+		if part:IsA("BasePart") then
+			local hit=workspace:Raycast(root.Position,part.Position-root.Position,params)
+			if not hit or hit.Instance:IsDescendantOf(display) then visible=true; break end
+		end
+	end
+	if not visible then return end
+	push(player,"Choose coins or Ark Points to buy this item.","merchandise",id)
+end
 world.shopPrompt.Triggered:Connect(function(player) if atShop(player) then push(player, nil, "shop") end end)
 world.challengePrompt.Triggered:Connect(function(player)
 	local root = healthyRoot(player)
@@ -165,7 +195,7 @@ local function join(player)
 	if not session then player:Kick(reason); return end
 	if player.Parent ~= Players or closing then Store:save(session, true); return end
 	sessions[player] = session
-	player.RespawnLocation = world.checkpoints[session.data.exploration.activeCheckpoint] or world.spawnLocation
+	player.RespawnLocation = travel:respawn(session.data) or world.spawnLocation
 	local stats = Instance.new("Folder"); stats.Name = "leaderstats"; stats.Parent = player
 	local points = Instance.new("IntValue"); points.Name = "Ark Points"; points.Value = session.data.points; points.Parent = stats
 	local function characterAdded(character)
@@ -174,7 +204,7 @@ local function join(player)
 		if not root or player.Character ~= character or player.Parent ~= Players then return end
 		-- Initial characters may exist before the procedural spawn is created.
 		-- Move them to the authored entrance and discard the teleport for travel.
-		local checkpoint = world.checkpoints[session.data.exploration.activeCheckpoint]
+		local checkpoint = travel:respawn(session.data)
 		character:PivotTo(if checkpoint then checkpoint.CFrame * CFrame.new(0, 4, 0) else world.spawn * CFrame.new(0, 2, 0))
 		positions[player] = nil
 		push(player)
@@ -247,6 +277,7 @@ end)
 
 World.startBoats(world, boatInput)
 waterSafety:start()
+travel:start()
 local wildlife=Wildlife.new(world, Catalog, Rules, capture, preview, function(player)
 	local p=getProfile(player); return p and p.owned
 end)

@@ -4,19 +4,14 @@ local Layout = require(Shared.MapLayout)
 local Geometry = require(Shared.MapGeometry)
 
 local PlanWorld = {}
-local palette = {
-	ground = Color3.fromRGB(127, 165, 129), corridor = Color3.fromRGB(222, 217, 196),
-	room = Color3.fromRGB(206, 217, 205), meadow = Color3.fromRGB(144, 187, 120),
-	jungle = Color3.fromRGB(72, 137, 109), summit = Color3.fromRGB(209, 225, 227),
-	atrium = Color3.fromRGB(184, 145, 94), entry = Color3.fromRGB(228, 205, 158),
-	wall = Color3.fromRGB(230, 226, 207), mint = Color3.fromRGB(133, 222, 185),
-	wood = Color3.fromRGB(130, 93, 60), navy = Color3.fromRGB(27, 57, 68),
-}
+local palette = {}
+for key, color in require(Shared.Colors) do palette[key]=Color3.fromRGB(unpack(color)) end
 
 function PlanWorld.build(world, part, label)
 	local floorY, waterY = Layout.FloorY, Layout.WaterY
 	local dockY = waterY + 4
 	local map = Instance.new("Folder"); map.Name = "ZoMap1Campus"; map.Parent = world.runtime
+	local grade=Instance.new("ColorCorrectionEffect"); grade.Name="ZoVibrantColors"; grade.Saturation=0.14; grade.Contrast=0.04; grade.Brightness=0.02; grade.Parent=game:GetService("Lighting")
 	world.mapKind = "hybrid"; world.mapName = Layout.Name
 	local function point(x, y, height)
 		local wx, wz = Geometry.world(Layout.Source, x, y)
@@ -31,8 +26,8 @@ function PlanWorld.build(world, part, label)
 		local p = part(parent, name, Vector3.new(thickness, height, (b - a).Magnitude), CFrame.lookAt((a + b) / 2, b), color, material)
 		return p
 	end
-	workspace.Terrain.WaterColor = Color3.fromRGB(41, 149, 164)
-	workspace.Terrain.WaterTransparency = 0.4
+	workspace.Terrain.WaterColor = palette.water
+	workspace.Terrain.WaterTransparency = 0.35
 	workspace.Terrain.WaterWaveSize = 0.12; workspace.Terrain.WaterWaveSpeed = 7
 	local waterDepth = waterY - Layout.SeabedY
 	local sea = world.config.SeaBounds
@@ -99,7 +94,7 @@ function PlanWorld.build(world, part, label)
 			bounds = {minX = a.X, maxX = b.X, minZ = a.Z, maxZ = b.Z},
 			radius = math.min(b.X - a.X, b.Z - a.Z) / 2,
 			marine = marine, count = zone.count,
-			mapId = "ark", obscure = zone.obscure == true, event = zone.event == true,
+			mapId = "ark", seaway = zone.extension == true, obscure = zone.obscure == true, event = zone.event == true,
 		})
 		local signX = if marine then zone.rect[1] - 13 else x
 		local signY = if marine then y else zone.rect[2] + 3

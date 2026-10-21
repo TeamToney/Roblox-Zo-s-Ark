@@ -8,12 +8,14 @@ local function test(name: string, callback: () -> ())
 	local ok, problem = pcall(callback)
 	if ok then passed += 1; print("PASS  " .. name) else failed += 1; print("FAIL  " .. name .. ": " .. tostring(problem)) end
 end
-test("all visible habitats exclude Rare, Epic, Legendary and Mythic wildlife", function()
-	for _, habitat in {"meadow", "jungle", "summit", "reef", "ocean"} do
-		for index = 0, 99 do
-			local id = assert(Wildlife.choose(Catalog, {habitat = habitat}, index / 100))
-			assert(Catalog.Rarities[Catalog.Species[id].rarity].rank < 3)
+test("visible habitats allow matching rare wildlife with a small normalized budget", function()
+	for _,habitat in {"meadow","jungle","summit","reef","ocean"} do
+		local sum,special=0,0
+		for _,entry in Wildlife.distribution(Catalog,{habitat=habitat,mapId="ark"}) do
+			sum+=entry.probability
+			if Catalog.Rarities[Catalog.Species[entry.id].rarity].rank>=3 then special+=entry.probability end
 		end
+		assert(math.abs(sum-1)<0.000001); assert(special>0 and special<0.03)
 	end
 end)
 test("every ordinary species has at least one eligible authored habitat", function()
@@ -47,6 +49,45 @@ test("room visits are limited to the same island and sufficient body clearance",
 end)
 test("invalid spawn rolls cannot choose wildlife", function()
 	for _, roll in {-1, 1, math.huge, 0 / 0} do assert(Wildlife.choose(Catalog, {habitat = "meadow"}, roll) == nil) end
+end)
+test("every map supports rare epic and legendary wildlife without excluding public habitats", function()
+	local plans: {any}={Layout}; for _,plan in Islands.Islands do table.insert(plans,plan) end
+	for _,plan in plans do
+		local ranks: {[number]: boolean}={}
+		for _,zone in plan.Zones do
+			for _,entry in Wildlife.distribution(Catalog,{habitat=zone.habitat,mapId=plan.Id,obscure=zone.obscure}) do
+				if entry.probability>0 then ranks[Catalog.Rarities[Catalog.Species[entry.id].rarity].rank]=true end
+			end
+		end
+		assert(ranks[3] and ranks[4] and ranks[5],plan.Id.." must support all three scarce tiers")
+	end
+end)
+test("paid islands and hidden habitats increase scarce-tier probability while commons remain the majority", function()
+	local previous=0
+	for _,mapId in Catalog.MapOrder do
+		local total,hidden=0,0
+		for _,entry in Wildlife.distribution(Catalog,{habitat="jungle",mapId=mapId}) do if Catalog.Rarities[Catalog.Species[entry.id].rarity].rank>=3 then total+=entry.probability end end
+		for _,entry in Wildlife.distribution(Catalog,{habitat="jungle",mapId=mapId,obscure=true}) do if Catalog.Rarities[Catalog.Species[entry.id].rarity].rank>=3 then hidden+=entry.probability end end
+		assert(total>previous and hidden>total and hidden<0.3); previous=total
+	end
+end)
+test("all seaways have rare epic and legendary possibilities with no event-only drops", function()
+	for _,zone in require("../src/shared/SeawayLayout") do
+		local ranks: {[number]: boolean}={}; local sum=0
+		for _,entry in Wildlife.distribution(Catalog,{habitat=zone.habitat,seaway=true,mapId="ark"}) do
+			assert(not Catalog.Species[entry.id].eventOnly); sum+=entry.probability
+			ranks[Catalog.Rarities[Catalog.Species[entry.id].rarity].rank]=true
+		end
+		assert(ranks[3] and ranks[4] and ranks[5]); assert(math.abs(sum-1)<0.000001)
+	end
+end)
+test("sampler boundaries use the full rarity distribution including the smallest legendary budget", function()
+	local zone={habitat="jungle",mapId="ark"}; local edge=0
+	for _,entry in Wildlife.distribution(Catalog,zone) do
+		local selected=Wildlife.choose(Catalog,zone,edge+entry.probability/2)
+		assert(selected==entry.id); edge+=entry.probability
+	end
+	assert(math.abs(edge-1)<0.000001)
 end)
 print(string.format("\n%d wildlife-placement cases passed, %d failed (eligibility, not Roblox navigation)", passed, failed))
 if failed > 0 then error("Wildlife placement checks failed") end

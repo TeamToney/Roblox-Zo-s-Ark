@@ -4,6 +4,7 @@ export type Profile = {
 	coins: number, points: number, inventory: {[string]: number}, owned: {[string]: boolean},
 	discovered: {[string]: boolean}, titles: {[string]: boolean}, bait: number,
 	stock: {[string]: number}, wardrobe: {[string]: string}, receipts: {[string]: boolean},
+	maps: {[string]: boolean},
 	stats: {catches: number, rare: number, distance: number, traded: number, walkDistance: number, swimDistance: number},
 	daily: {day: number, catches: number, rare: number, distance: number, claimed: {[string]: boolean}},
 	event: {id: number, captures: number, claimed: boolean},
@@ -31,7 +32,7 @@ function Rules.new(catalog: any, config: any)
 	function api.blank(now: number): Profile
 		return {
 			coins = config.StartingCoins, points = 0, inventory = {}, owned = {}, discovered = {}, titles = {}, bait = 0,
-			stock = {speedBoost = 0, animalTrap = 0}, wardrobe = {}, receipts = {},
+			stock = {speedBoost = 0, animalTrap = 0, teleportPass = 0}, wardrobe = {}, receipts = {}, maps = {ark = true},
 			stats = {catches = 0, rare = 0, distance = 0, traded = 0, walkDistance = 0, swimDistance = 0},
 			daily = {day = math.floor(now / 86400), catches = 0, rare = 0, distance = 0, claimed = {}},
 			event = {id = -2, captures = 0, claimed = false},
@@ -50,6 +51,7 @@ function Rules.new(catalog: any, config: any)
 		p.coins = integer(raw.coins, config.StartingCoins)
 		p.points = integer(raw.points, 0)
 		p.bait = integer(raw.bait, 0, 999)
+		for id in catalog.Maps do if type(raw.maps) == "table" and raw.maps[id] == true then p.maps[id] = true end end
 		for id in catalog.Species do
 			p.inventory[id] = integer(if type(raw.inventory) == "table" then raw.inventory[id] else nil, 0, 1000)
 			if type(raw.discovered) == "table" and raw.discovered[id] == true then p.discovered[id] = true end
@@ -103,7 +105,7 @@ function Rules.new(catalog: any, config: any)
 					p.exploration.chests[id] = integer(e.chests[id], 0, math.floor(now / 86400))
 				end
 			end
-			for _, mapId in {"ark", "canopy", "moonstone"} do
+			for mapId in catalog.Maps do
 				p.exploration.catches[mapId] = integer(if type(e.catches) == "table" then e.catches[mapId] else nil, 0)
 				p.exploration.rareCatches[mapId] = integer(if type(e.rareCatches) == "table" then e.rareCatches[mapId] else nil, 0)
 			end
@@ -137,8 +139,8 @@ function Rules.new(catalog: any, config: any)
 		if animal.gear and not p.owned[animal.gear] and not (animal.gear == "snorkel" and p.owned.diving) then
 			return nil, "Buy the " .. catalog.Items[animal.gear].name .. " at the Ark first."
 		end
-		local adjustment = if condition == "snared" then 0.22 elseif condition == "fleeing" then -0.18 else 0
-		return math.clamp(0.93 - animal.difficulty + (tier - 1) * 0.08 + (if p.bait > 0 then 0.15 else 0) + adjustment, 0.12, 0.96), nil
+		local adjustment = if condition == "snared" then 0.22 elseif condition == "fleeing" then -0.14 else 0
+		return math.clamp(config.CaptureBase - animal.difficulty * config.CaptureDifficulty + (tier - 1) * config.CaptureTierBonus + (if p.bait > 0 then 0.15 else 0) + adjustment, config.CaptureMinimum, config.CaptureMaximum), nil
 	end
 	function api.attempt(p: Profile, id: string, roll: number, now: number, preview: boolean?, mapId: string?, condition: string?): (boolean, string)
 		if type(roll) ~= "number" or roll ~= roll or roll < 0 or roll >= 1 then return false, "Invalid capture roll." end
@@ -156,7 +158,7 @@ function Rules.new(catalog: any, config: any)
 		p.discovered[id] = true
 		p.stats.catches += 1
 		p.daily.catches += 1
-		local region = if mapId == "canopy" or mapId == "moonstone" then mapId else "ark"
+		local region = if mapId and catalog.Maps[mapId] then mapId else "ark"
 		p.exploration.catches[region] = (p.exploration.catches[region] or 0) + 1
 		if catalog.Rarities[animal.rarity].rank >= 3 then p.exploration.rareCatches[region] = (p.exploration.rareCatches[region] or 0) + 1 end
 		if catalog.Rarities[animal.rarity].rank >= 3 then p.stats.rare += 1; p.daily.rare += 1 end
@@ -199,7 +201,9 @@ function Rules.new(catalog: any, config: any)
 	function api.grantProduct(p: Profile, id: string): boolean
 		local product = catalog.Products[id]
 		if not product then return false end
-		if product.stock then
+		if product.mapId then
+			if p.maps[product.mapId] then p.coins += product.duplicateCoins else p.maps[product.mapId] = true end
+		elseif product.stock then
 			p.stock[product.stock] = (p.stock[product.stock] or 0) + product.quantity
 		else
 			local allOwned = true

@@ -8,6 +8,7 @@ local PlanWorld = require(script.Parent.PlanWorld)
 local IslandWorld = require(script.Parent.IslandWorld)
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZoShared")
 local Geometry = require(Shared.MapGeometry)
+local Seaways = require(Shared.SeawayLayout)
 
 local World = {}
 local C = {
@@ -76,6 +77,10 @@ function World.build(config)
 		PlanWorld.build(self, part, label)
 		table.insert(self.plans, self.sourceLayout)
 		IslandWorld.build(self, part, label)
+		for _, route in Seaways do
+			local r=route.rect
+			table.insert(self.zones,{id=route.id,name=route.name,habitat=route.habitat,center=Vector3.new((r[1]+r[3])/2,2,(r[2]+r[4])/2),bounds={minX=r[1],minZ=r[2],maxX=r[3],maxZ=r[4]},radius=math.min(r[3]-r[1],r[4]-r[2])/2,marine=true,seaway=true,mapId="ark",count=route.count})
+		end
 		for _, plan in self.plans do
 			local function position(x, y, height)
 				local wx, wz = Geometry.world(plan.Source, x, y)
@@ -88,7 +93,7 @@ function World.build(config)
 				end
 			end
 			for _, cp in plan.Checkpoints do table.insert(self.checkpointSpots, {id = cp.id, position = position(cp.x, cp.y, plan.FloorY + 0.2)}) end
-			for _, chest in plan.Chests do table.insert(self.chestSpots, {id = chest.id, position = position(chest.x, chest.y, if chest.marine then plan.WaterY else plan.FloorY + 0.2)}) end
+			for _, chest in plan.Chests do table.insert(self.chestSpots, {id = chest.id, mapId = plan.Id, position = position(chest.x, chest.y, if chest.marine then plan.WaterY else plan.FloorY + 0.2)}) end
 		end
 	end
 	local spawn = Instance.new("SpawnLocation")

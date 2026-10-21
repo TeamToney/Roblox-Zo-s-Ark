@@ -39,7 +39,7 @@ function Commerce.new(catalog,rules,store,getSession,notify)
 			if player.Parent~=Players or not session or session.closed or session.lost or session.temporary or os.clock()>=deadline then break end
 			local granted=Receipts.process(session,receipt.PurchaseId,self.byId[receipt.ProductId],rules,function(s) return store:save(s,false) end)
 			if granted then
-				notify(player,"Robux purchase delivered to your Field Kit!","success")
+				notify(player,"Robux purchase delivered!","success")
 				return Enum.ProductPurchaseDecision.PurchaseGranted
 			end
 			if attempt<3 then task.wait(2) end

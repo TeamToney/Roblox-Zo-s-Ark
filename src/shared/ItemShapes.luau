@@ -3,11 +3,19 @@
 local Shapes = {}
 function Shapes.build(id: string, kind: string): {any}
 	local parts: {any} = {}
-	local mint, gold, navy, tan = {145,232,191}, {255,207,116}, {30,56,64}, {205,167,112}
+	local mint, gold, navy, tan = {48,244,190}, {255,210,49}, {23,61,96}, {222,155,79}
 	local function add(size: {number}, at: {number}, color: {number}, shape: string?)
 		table.insert(parts, {size = size, at = at, color = color, shape = shape or "block"})
 	end
-	if id == "tranquilizer" then
+	if id == "mapPass" then
+		add({2.8,3.2,0.18}, {0,0,0}, tan)
+		add({2.3,2.7,0.08}, {0,0,-0.14}, mint)
+		add({0.9,0.8,0.12}, {-0.5,0.6,-0.22}, gold)
+		add({1.1,0.8,0.12}, {0.45,-0.45,-0.22}, navy)
+	elseif id == "teleportPass" then
+		add({2.8,1.8,0.3}, {0,0,0}, {182,89,255})
+		for i=1,10 do local a=i*math.pi/5; add({0.2,0.2,0.2},{math.cos(a)*0.65,math.sin(a)*0.65,-0.24},mint,"ball") end
+	elseif id == "tranquilizer" then
 		add({3.8,0.55,0.65}, {0,0.2,0}, navy)
 		add({1.3,0.9,0.7}, {-2,0,0}, tan)
 		add({0.4,1,0.5}, {-0.7,-0.5,0}, mint)

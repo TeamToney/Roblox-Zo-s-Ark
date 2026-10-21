@@ -12,9 +12,9 @@ A grassland scene with Roblox's WELCOME sign is the starter place, not this game
 
 THREE-ISLAND EXPEDITION UPDATE
 The chart now shows Canopy Reach northeast and Moonstone Isle southeast.
-There are 26 animal species, 7 checkpoint respawns and 12 daily surprise chests.
+There are 27 animal species, 7 checkpoint respawns and 12 daily surprise chests.
 Chests are free but may remove points or kill your character. Checkpoints help!
-Hold Rescue for 0.25 seconds. Search secluded rooms/coves for Rare+ wildlife.
+Hold Rescue for 0.65-1.2 seconds by rarity. Hidden rooms/coves improve rare odds.
 
 WATER SURVIVAL
 Look for the SWIM ENDURANCE / HP bar and step/stroke counters above navigation.
@@ -35,3 +35,15 @@ Sprints last 45 seconds; unused charges can be bought or found in chests.
 Chests celebrate prizes with confetti, balloons and increasingly big fireworks.
 Robux bundles say Coming soon until the creator adds Developer Product IDs.
 Setup instructions are in docs/ROBUX_SETUP.md in the source repository.
+
+ISLAND PASSPORT & ANIMATED WALLET UPDATE
+The coin / Ark Point cards stay on screen, with count-up and gain/spend animations.
+Open TRAVEL (T) to buy permanent Canopy or Moonstone island access.
+Canopy: 1,200 coins / 800 points. Moonstone: 2,600 coins / 1,700 points.
+Once unlocked, sail for free or pay for an optional one-way teleport.
+Teleport fees: Ark 25 coins/15 points; Canopy 65/40; Moonstone 90/60.
+One Teleport Pass can pay for any owned destination. Entry is sold separately.
+Click a shelf item or price tag to select it, then choose your purchase currency.
+Rare, Epic and Legendary wildlife can spawn on all maps and sea routes.
+Paid islands and hidden habitats have better odds. Colors are more vibrant.
+Robux map unlocks and 5-pass packs are prepared, awaiting creator Product IDs.

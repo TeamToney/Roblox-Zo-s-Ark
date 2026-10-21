@@ -1,5 +1,11 @@
 --!strict
 local EncounterRules = {}
+function EncounterRules.holdTime(base: number, rank: number): number
+	return math.min(1.2, base + math.max(0, rank - 1) * 0.12)
+end
+function EncounterRules.held(started: number?, now: number, duration: number): boolean
+	return started ~= nil and now - started >= duration * 0.85 and now - started <= 8
+end
 function EncounterRules.alert(behavior: any, distance: number, camouflaged: boolean, now: number, restUntil: number, snaredUntil: number): boolean
 	return behavior ~= nil and now >= restUntil and now >= snaredUntil and distance <= behavior.alert * (if camouflaged then 0.55 else 1)
 end

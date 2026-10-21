@@ -2,13 +2,13 @@
 
 Explore an Ark sanctuary campus, outdoor habitats and the surrounding sea. Collect wildlife with nonlethal rescue gear and grow a field journal. Return to the Ark Atrium to trade animals into the sanctuary, buy equipment, and prepare for rarer encounters.
 
-This playable prototype adapts all **three uploaded floor plans** into the Ark Sanctuary, Canopy Reach and Moonstone Isle, combining their building layouts with outdoor biomes and open-sea exploration. It includes 26 animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily and island challenges, checkpoint respawns, surprise chests, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use original procedural art. Player-to-player trading is not implemented. Guaranteed Robux bundles have receipt handling, but remain unavailable until the experience owner configures Developer Products; see [Robux setup](docs/ROBUX_SETUP.md).
+This playable prototype adapts all **three uploaded floor plans** into the Ark Sanctuary, Canopy Reach and Moonstone Isle, combining their building layouts with outdoor biomes and open-sea exploration. It includes 27 animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily and island challenges, checkpoint respawns, surprise chests, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use original procedural art. Player-to-player trading is not implemented. Guaranteed Robux bundles have receipt handling, but remain unavailable until the experience owner configures Developer Products; see [Robux setup](docs/ROBUX_SETUP.md).
 
 The water-survival update adds solid island foundations down to the seabed, four marked shore stairways, swim endurance, recovery pickups, and bonuses for walking and swimming. Animals now have species-specific silhouettes, coat patterns, shells, fins and feathers, with animated limbs, wings and tails made from original Roblox primitives.
 
 See the [colored layout diagram](docs/map-1-layout.svg) and [Map 1 design notes](docs/MAP1_DESIGN.md). The map preserves the southern entrance, lower gallery corridor, pointed central atrium, flanking rooms and large eastern hall; smaller partitions are simplified. The scale is chosen for play, not recovered from the scan's measurements.
 
-The [three-island overview](docs/archipelago-layout.svg) and [island design notes](docs/ISLANDS_DESIGN.md) explain the two additional traces. Canopy Reach is northeast of the Ark; Moonstone Isle is southeast. Each new island has three checkpoints, four surprise chests, wildlife and an expedition challenge. Seven boats serve the archipelago. The main campus remains in its original position and orientation.
+The [three-island overview](docs/archipelago-layout.svg) and [island design notes](docs/ISLANDS_DESIGN.md) explain the two additional traces. Canopy Reach is northeast of the Ark; Moonstone Isle is southeast. Each new island has three checkpoints, four surprise chests, wildlife and an expedition challenge. Their permanent entry passes are purchased in **Travel**; the Ark and shared seas remain free. Seven boats serve the archipelago. The main campus remains in its original position and orientation.
 
 ## Open and play
 
@@ -23,21 +23,21 @@ For development builds:
 5. Follow the avenue north and go around the pointed Ark Atrium to its north entrance. Visit Ark Outfitters inside. Open **Journal** to trade animals or **Store** to buy permanent equipment upgrades.
 6. Visit Tidewater Hall in the northeast. Descend its southern boarding steps, borrow a boat, and use normal movement controls to steer; jump to leave. Sail through the eastern sea gate to find more marine wildlife. Each boat seats three players including the pilot.
 
-Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B** store, **C** challenges, **M** chart, **K** field kit, **H** guide; **1** sprint, **2** snare, **3** scanner. Field Kit buttons provide the same actions on touch devices. Boats are free and return to their dock after 45 seconds without occupants. Gear upgrades apply automatically, including the nonlethal tranquilizer upgrade; there is no aiming or weapon combat system yet.
+Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B** store, **C** challenges, **M** chart, **K** field kit, **T** travel, **H** guide; **1** sprint, **2** snare, **3** scanner. Field Kit buttons provide the same actions on touch devices. Boats are free and return to their dock after 45 seconds without occupants. Gear upgrades apply automatically, including the nonlethal tranquilizer upgrade; there is no aiming or weapon combat system yet.
 
 ### Island expeditions and surprise chests
 
-- Hold **Rescue animal** for **0.25 seconds**; the server capture cooldown is **0.8 seconds**. Common/Uncommon land animals can follow navigable doorways between rooms on their home island. Failed paths stop movement; wildlife never teleports through walls.
-- **Rare, Epic, Legendary and Mythic wildlife** spawn only in secluded habitats. Look in remote rooms, coral alcoves and coves. These habitat locations are omitted from chart markers. Aurora Mantas appear in Tidewater Hall's secluded coral alcove. Rare wildlife stays in its hidden home habitat.
+- Hold **Rescue animal** for **0.65–1.2 seconds** depending on rarity; the server capture cooldown is **2.25 seconds**. Common/Uncommon land animals can follow navigable doorways between rooms on their home island. Failed paths stop movement; wildlife never teleports through walls.
+- **Rare, Epic and Legendary wildlife** can spawn on every island and sea route in matching habitats. They are scarce on the Ark; paid islands have higher rates, and secluded habitats multiply those rates by 1.8. Wild rare animals stay near their home habitat. Mythic Aurora Mantas remain exclusive to the timed coral-alcove event.
 - Activate any of the **7 checkpoints** to set your respawn; the first activation awards **15 coins + 10 points**. The active checkpoint persists with the journal. Both new islands have a landing checkpoint, an interior checkpoint and a hidden checkpoint. Check **Challenges** for four one-time expedition prizes.
 - The **12 surprise chests** are free, with one opening per explorer per chest per UTC day. Defaults: **35% coins**, **30% an animal**, **16% equipment/cosmetics**, **2.8% sprint boost**, **1.2% snare**, **10% a point-loss trap**, **5% a death trap**. Only obscure chests can reveal Rare+ animals; event mantas are excluded. Functional equipment is permanent and automatically active; equip cosmetics through Field Kit. An animal prize with a full pack converts to its coin value and discovery points.
 - Point traps remove 12% of current Ark Points, at least 10 when available, clamped at zero. Death traps kill the character and respawn at the selected checkpoint; existing gear, animals and discoveries remain. Reopening the same chest that day cannot reroll the result. New openings become available at midnight UTC.
 
 ### Outfitters, escapes and field kit
 
-Ark Outfitters is a walk-in shop in the existing pointed Atrium, with an open north-facing doorway, striped awning, counter, shelving, modeled merchandise and visible prices. The Store panel adds category filters, 3D item previews, and separate coin/Ark Point purchase buttons. All fourteen items support either currency. Spending points also affects the existing level formula.
+Ark Outfitters is a walk-in shop in the existing pointed Atrium, with an open north-facing doorway, striped awning, counter, shelving, modeled merchandise and visible prices. The Store panel adds category filters, 3D item previews, and separate coin/Ark Point purchase buttons. All fifteen items support either currency. Spending points also affects the existing level formula.
 
-Twelve species have escape behavior: fox, deer, raccoon, boar, parrot, eagle, jaguar, tiger, snow leopard, frostlight fox, ibex and peacock. Approaching too closely or failing a valid rescue can make them flee. Bursts last 3.5 seconds, followed by a rest; flying birds rise briefly and must land before rescue. Fleeing lowers capture chance by 18 percentage points. Ground-checked destinations and wall sweeps keep wildlife within accessible terrain; secluded species stay in their hidden habitats.
+Twelve species have escape behavior: fox, deer, raccoon, boar, parrot, eagle, jaguar, tiger, snow leopard, frostlight fox, ibex and peacock. Approaching too closely or failing a valid rescue can make them flee. Bursts last 3.5 seconds, followed by a rest; flying birds rise briefly and must land before rescue. Fleeing lowers capture chance by 14 percentage points. Capture holds are checked on the server; failed attempts also impose a short recovery. Ground-checked destinations and wall sweeps keep wildlife within accessible terrain; secluded species stay in their hidden habitats.
 
 New purchases:
 
@@ -53,6 +53,24 @@ New purchases:
 Field Kit activates supplies anywhere; placing snares requires level dry ground, consumes a charge only on a valid placement and permits two active snares per player. Gear/tier/full-pack rules still apply to snared rescues. Scanner signals last only during the scan and show at most six nearby creatures. Unused supplies and equipped cosmetics persist in the v1 journal; active sprint/scan timers are session state. Sprint raises running speed from 18 to 28 studs/second; swimming also accelerates without extending endurance. Server movement sampling accounts for the boost when awarding ten-step/stroke bonuses.
 
 Chest rewards now have local celebrations: small confetti for modest coins, balloons for better prizes, and larger/multiple firework bursts for gear and rare/legendary animals. Trap results use a distinct subdued burst. These visual effects grant no rewards and are cleaned up automatically. The paid shop offers only guaranteed bundles; opening surprise chests remains free.
+
+### Island access, teleports and the fixed wallet
+
+The coin and Ark Point cards stay in the screen header when panels close and after respawning. Balances count smoothly to each authoritative update; earned/spent deltas float and fade with a brief icon pulse. Bright turquoise water, saturated biome floors, warmer paths and clearer rarity colors make the world more vibrant.
+
+Open **Travel** or press **T**. Ark Sanctuary and the shared sea are free. Canopy Reach costs **1,200 coins or 800 points**; Moonstone Isle costs **2,600 coins or 1,700 points**. These are permanent island unlocks, separate from optional teleport fees. The server checks physical entry, captures, checkpoints, chests, scanners and respawns. Older visited checkpoints and catches are preserved, but a prior visit is not a purchased entry pass.
+
+| Teleport destination | Coins per trip | Points per trip | Alternative |
+| --- | ---: | ---: | --- |
+| Ark landing | 25 | 15 | 1 Teleport Pass |
+| Canopy landing | 65 | 40 | 1 Teleport Pass |
+| Moonstone landing | 90 | 60 | 1 Teleport Pass |
+
+Teleports require an unlocked destination and a living, unseated explorer. There is a 6-second cooldown; invalid, already-at-landing or failed moves do not charge. Sailing is free after unlocking. Outfitters sells single passes for 80 coins/50 points, and the prepared Robux collection offers 5 passes or permanent map unlocks. Robux prices/IDs still need creator configuration.
+
+Base per-spawn rarity budgets, when matching species exist: Ark **1.5% Rare / 0.5% Epic / 0.08% Legendary**; Canopy **5% / 1.8% / 0.4%**; Moonstone **7.5% / 3% / 0.8%**. Hidden habitats multiply them by 1.8 and open seaways by 1.2. Missing rarity budgets return to common wildlife. These are spawn probabilities, not guarantees or capture odds. Five added sea routes target 15 additional animals; the new Legendary Sunburst Ray can appear in reefs and seaways. The archipelago targets 96 ordinary animals plus 2 event mantas.
+
+Click/tap a shelf item or its price tag to open that selected product. Store preview models are selectable too. The purchase card offers coins or points; it does not charge merely for selecting an item.
 
 ### Swimming and movement bonuses
 
@@ -107,7 +125,7 @@ Open the place, connect the Rojo plugin to the local server, and sync the source
 | `src/shared/IslandLayouts.luau` | Both additional floor-plan traces, island positions, checkpoints and chests |
 | `src/shared/MapGeometry.luau` | Coordinate conversion, door gaps, foundation cutouts, floor outlines |
 | `src/shared/SwimRules.luau` | Equipment endurance, fatigue, flotation and recovery rules |
-| `src/shared/AnimalShapes.luau` | Pure geometry blueprints for all 26 animal species |
+| `src/shared/AnimalShapes.luau` | Pure geometry blueprints for all 27 animal species |
 | `src/shared/WildlifeRules.luau` | Hidden-rarity spawn policy and room-visit eligibility |
 | `src/server/Bootstrap.server.luau` | Server authority, remotes, capture/travel validation |
 | `src/server/ProfileStore.luau` | Profile ownership, safe loading and saving |

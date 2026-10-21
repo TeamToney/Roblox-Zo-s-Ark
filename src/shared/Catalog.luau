@@ -10,12 +10,18 @@ export type Item = {
 	pointsPrice: number?, category: string?, stock: string?, quantity: number?, slot: string?,
 }
 local Catalog = {}
+Catalog.Maps = {
+	ark = {name = "Ark Sanctuary", free = true, price = 0, pointsPrice = 0, checkpoint = "ark", teleportCoins = 25, teleportPoints = 15, rare = 0.015, epic = 0.005, legendary = 0.0008, description = "Your home island. Every rarity is possible; higher-rarity sightings are scarce."},
+	canopy = {name = "Canopy Reach", price = 1200, pointsPrice = 800, checkpoint = "canopyDock", product = "canopyAccess", teleportCoins = 65, teleportPoints = 40, rare = 0.05, epic = 0.018, legendary = 0.004, description = "Lush galleries, secret forest rooms and more frequent rare encounters."},
+	moonstone = {name = "Moonstone Isle", price = 2600, pointsPrice = 1700, checkpoint = "moonstoneDock", product = "moonstoneAccess", teleportCoins = 90, teleportPoints = 60, rare = 0.075, epic = 0.03, legendary = 0.008, description = "Vibrant courts, secluded coves and the best epic/legendary encounter rates."},
+} :: {[string]: any}
+Catalog.MapOrder = {"ark", "canopy", "moonstone"}
 Catalog.Rarities = {
 	Common = {rank = 1, color = {172, 191, 181}},
 	Uncommon = {rank = 2, color = {117, 218, 158}},
-	Rare = {rank = 3, color = {100, 183, 255}},
-	Epic = {rank = 4, color = {196, 149, 255}},
-	Legendary = {rank = 5, color = {255, 205, 102}},
+	Rare = {rank = 3, color = {61, 163, 255}},
+	Epic = {rank = 4, color = {201, 92, 255}},
+	Legendary = {rank = 5, color = {255, 189, 26}},
 	Mythic = {rank = 6, color = {255, 143, 179}},
 } :: {[string]: {rank: number, color: {number}}}
 Catalog.Species = {
@@ -47,6 +53,12 @@ Catalog.Species = {
 	axolotl = {name = "Rosewater Axolotl", habitat = "reef", rarity = "Epic", tier = 3, difficulty = 0.52, value = 390, points = 250, weight = 12, form = "axolotl", color = {235, 176, 185}, scale = 1.1, gear = "snorkel"},
 } :: {[string]: Species}
 Catalog.SpeciesOrder = {"rabbit", "fox", "deer", "monkey", "parrot", "jaguar", "goat", "eagle", "snowLeopard", "reefFish", "seaTurtle", "dolphin", "whale", "auroraRay", "capybara", "raccoon", "boar", "redPanda", "peacock", "tiger", "ibex", "arcticFox", "mackerel", "seal", "hammerhead", "axolotl"}
+Catalog.Species.sunRay = {name = "Sunburst Ray", habitat = "reef", rarity = "Legendary", tier = 4, difficulty = 0.70, value = 1350, points = 850, weight = 3, form = "ray", color = {255, 157, 64}, scale = 1.7, gear = "diving"}
+table.insert(Catalog.SpeciesOrder, "sunRay")
+for _, species in Catalog.Species do
+	local average=(species.color[1]+species.color[2]+species.color[3])/3
+	for channel,value in species.color do species.color[channel]=math.clamp(math.floor(average+(value-average)*1.16),0,255) end
+end
 Catalog.Items = {
 	rangerNet = {name = "Ranger Net", price = 180, description = "Tier 2 • deer, birds, turtles and better odds", kind = "net", tier = 2},
 	snorkel = {name = "Reef Snorkel", price = 220, description = "60s swim endurance; handle turtles, dolphins and mantas", kind = "access"},
@@ -100,15 +112,20 @@ for _, item in Catalog.Items do
 	item.pointsPrice = item.pointsPrice or math.ceil(item.price * 0.65)
 	item.category = item.category or (if item.kind == "net" then "Rescue" elseif item.kind == "consumable" then "Boosts" else "Gear")
 end
-Catalog.Categories = {"All", "Rescue", "Gear", "Tracking", "Boosts", "Style"}
+Catalog.Items.teleportPass = {name = "Teleport Pass", price = 80, pointsPrice = 50, description = "One teleport to an unlocked island. Use Travel to choose your destination. Island access is sold separately.", kind = "supply", category = "Travel", stock = "teleportPass", quantity = 1}
+table.insert(Catalog.ItemOrder, "teleportPass")
+Catalog.Categories = {"All", "Rescue", "Gear", "Tracking", "Boosts", "Style", "Travel"}
 -- Guaranteed products only; IDs are configured in Monetization.luau.
 Catalog.Products = {
-	sprintPack = {name = "3 Expedition Sprints", description = "Three 45-second sprint boosts, ready to activate in your Field Kit.", stock = "speedBoost", quantity = 3},
-	trapPack = {name = "3 Gentle Animal Snares", description = "Three single-use land snares. Rescue gear is still required.", stock = "animalTrap", quantity = 3},
-	explorerStyle = {name = "Explorer Style Bundle", description = "Safari Hat + Aurora Footsteps. If you already own both: 400 coins instead.", items = {"safariHat", "mintTrail"}, duplicateCoins = 400},
-	rangerKit = {name = "Ranger Expedition Kit", description = "Ranger Net, Pack, Scanner, Snorkel, Life Jacket + Camouflage. Own all six? 1,200 coins instead.", display = "fieldPack", items = {"rangerNet", "fieldPack", "tracker", "snorkel", "lifeJacket", "camoCoat"}, duplicateCoins = 1200},
+	sprintPack = {category = "Boosts", name = "3 Expedition Sprints", description = "Three 45-second sprint boosts, ready to activate in your Field Kit.", stock = "speedBoost", quantity = 3},
+	trapPack = {category = "Tracking", name = "3 Gentle Animal Snares", description = "Three single-use land snares. Rescue gear is still required.", stock = "animalTrap", quantity = 3},
+	explorerStyle = {category = "Style", name = "Explorer Style Bundle", description = "Safari Hat + Aurora Footsteps. If you already own both: 400 coins instead.", items = {"safariHat", "mintTrail"}, duplicateCoins = 400},
+	rangerKit = {category = "Gear", name = "Ranger Expedition Kit", description = "Ranger Net, Pack, Scanner, Snorkel, Life Jacket + Camouflage. Own all six? 1,200 coins instead.", display = "fieldPack", items = {"rangerNet", "fieldPack", "tracker", "snorkel", "lifeJacket", "camoCoat"}, duplicateCoins = 1200},
+	canopyAccess = {category = "Travel", name = "Canopy Reach Access", description = "Permanent access to Canopy Reach. Already unlocked? 900 coins instead. Teleports sold separately.", mapId = "canopy", duplicateCoins = 900, display = "mapPass"},
+	moonstoneAccess = {category = "Travel", name = "Moonstone Isle Access", description = "Permanent access to Moonstone Isle. Already unlocked? 1,800 coins instead. Teleports sold separately.", mapId = "moonstone", duplicateCoins = 1800, display = "mapPass"},
+	teleportPack = {category = "Travel", name = "5 Teleport Passes", description = "Five one-way teleports to islands you have unlocked. Choose a destination in Travel; island access is separate.", stock = "teleportPass", quantity = 5},
 } :: {[string]: any}
-Catalog.ProductOrder = {"sprintPack", "trapPack", "explorerStyle", "rangerKit"}
+Catalog.ProductOrder = {"sprintPack", "trapPack", "explorerStyle", "rangerKit", "canopyAccess", "moonstoneAccess", "teleportPack"}
 Catalog.Escape = {
 	fox = {mode = "run", alert = 17, speed = 15}, deer = {mode = "run", alert = 21, speed = 19},
 	raccoon = {mode = "run", alert = 15, speed = 13}, boar = {mode = "run", alert = 18, speed = 16},

@@ -7,7 +7,7 @@ function Storefront.build(world, part, label)
 	local model = Instance.new("Model"); model.Name = "ArkOutfittersStorefront"; model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic; model.Parent = world.runtime
 	-- Open north-facing entrance, inside the existing pointed atrium.
 	local origin = CFrame.new(world.hub + Vector3.new(17,0.5,15))
-	local navy, mint, wood, cream = Color3.fromRGB(30,56,64), Color3.fromRGB(145,232,191), Color3.fromRGB(170,127,82), Color3.fromRGB(249,241,217)
+	local navy, mint, wood, cream = Color3.fromRGB(20,50,91), Color3.fromRGB(48,244,190), Color3.fromRGB(207,139,68), Color3.fromRGB(255,249,224)
 	local function p(name, size, at, color, material)
 		return part(model, name, size, origin * CFrame.new(at), color, material or Enum.Material.WoodPlanks)
 	end
@@ -32,17 +32,21 @@ function Storefront.build(world, part, label)
 	p("CashRegister",Vector3.new(1.5,1.2,1.3),Vector3.new(2,4.1,6),navy)
 	label(counter,"ARK OUTFITTERS\nBrowse • buy • trade",5,270)
 	for index, id in Catalog.ItemOrder do
-		local row, column = math.floor((index-1)/7), (index-1)%7
-		local center = Vector3.new(-15+column*5,3+row*3.8,10)
-		p("DisplayShelf",Vector3.new(4.7,0.2,3),center+Vector3.new(0,-1.5,0),wood)
+		local row, column = math.floor((index-1)/8), (index-1)%8
+		local center = Vector3.new(-16.1+column*4.6,3+row*3.8,10)
+		p("DisplayShelf",Vector3.new(4.4,0.2,3),center+Vector3.new(0,-1.5,0),wood)
 		local item = Catalog.Items[id]
+		local display=Instance.new("Model"); display.Name="Merchandise_"..id; display.Parent=model
 		for _, spec in Shapes.build(id,item.kind) do
-			local prop = part(model,"Display_"..id,Vector3.new(unpack(spec.size))*0.55,origin*CFrame.new(center+Vector3.new(unpack(spec.at))*0.55),Color3.fromRGB(unpack(spec.color)),Enum.Material.SmoothPlastic,if spec.shape=="ball" then Enum.PartType.Ball else nil)
-			prop.CanCollide = false; prop.CanQuery = false
+			local prop = part(display,"Display_"..id,Vector3.new(unpack(spec.size))*0.55,origin*CFrame.new(center+Vector3.new(unpack(spec.at))*0.55),Color3.fromRGB(unpack(spec.color)),Enum.Material.SmoothPlastic,if spec.shape=="ball" then Enum.PartType.Ball else nil)
+			prop.CanCollide = false; prop.CanQuery = true
 		end
-		local tag = p("PriceTag_"..id,Vector3.new(4.7,1,0.15),center+Vector3.new(0,-1.2,-1.6),navy)
+		local tag = p("PriceTag_"..id,Vector3.new(4.4,1,0.15),center+Vector3.new(0,-1.2,-1.6),navy)
+		tag.Parent=display; display.PrimaryPart=tag
+		local click=Instance.new("ClickDetector"); click.MaxActivationDistance=28; click.Parent=display
+		click.MouseClick:Connect(function(player) if world.onMerchandise then world.onMerchandise(player,id,display) end end)
 		local gui = Instance.new("SurfaceGui"); gui.Face = Enum.NormalId.Front; gui.CanvasSize = Vector2.new(320,100); gui.Parent = tag
-		local text = Instance.new("TextLabel"); text.Size = UDim2.fromScale(1,1); text.BackgroundTransparency = 1; text.Text = item.name.."\n"..item.price.." coins / "..item.pointsPrice.." pts"; text.TextColor3 = cream; text.Font = Enum.Font.GothamBold; text.TextSize = 19; text.TextWrapped = true; text.Parent = gui
+		local text = Instance.new("TextLabel"); text.Size = UDim2.fromScale(1,1); text.BackgroundTransparency = 1; text.Text = item.name.."\n"..item.price.." coins / "..item.pointsPrice.." pts\nCLICK TO BUY"; text.TextColor3 = cream; text.Font = Enum.Font.GothamBold; text.TextSize = 19; text.TextWrapped = true; text.Parent = gui
 	end
 	for _, x in {-16,16} do
 		p("Planter",Vector3.new(2.5,2,2.5),Vector3.new(x,1,-15),wood)

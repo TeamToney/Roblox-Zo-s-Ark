@@ -2,9 +2,10 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local World = require(script.Parent.World)
+local TravelRules=require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").TravelRules)
 local FieldKit = {}; FieldKit.__index = FieldKit
 function FieldKit.new(world, config, catalog, rules, getProfile, notify, effects)
-	return setmetatable({world=world, config=config, catalog=catalog, rules=rules, getProfile=getProfile, notify=notify, effects=effects, records={}, traps={}},FieldKit)
+	return setmetatable({world=world, config=config, catalog=catalog, rules=rules, getProfile=getProfile, notify=notify, effects=effects, access=TravelRules.new(catalog), records={}, traps={}},FieldKit)
 end
 function FieldKit:record(player)
 	if not self.records[player] then self.records[player] = {boostUntil=0,scanUntil=0,nextScan=0,nextTrap=0} end
@@ -102,7 +103,7 @@ function FieldKit:start(wildlife)
 				local targets={}
 				for _, animal in wildlife.records do
 					local distance=(animal.root.Position-root.Position).Magnitude
-					if animal.alive and distance<=self.config.ScanRadius then table.insert(targets,{position=animal.root.Position,name=self.catalog.Species[animal.id].name,distance=distance,model=animal.model}) end
+					if animal.alive and self.access.canAccess(p,animal.zone.mapId or "ark") and distance<=self.config.ScanRadius then table.insert(targets,{position=animal.root.Position,name=self.catalog.Species[animal.id].name,distance=distance,model=animal.model}) end
 				end
 				table.sort(targets,function(a,b) return a.distance<b.distance end)
 				while #targets>6 do table.remove(targets) end

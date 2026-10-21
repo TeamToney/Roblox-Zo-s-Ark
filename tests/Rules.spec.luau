@@ -56,7 +56,7 @@ test("better gear and bait improve odds with a hard ceiling", function()
 	p.owned.rangerNet = true
 	assert((Rules.chance(p, "rabbit") :: number) > original)
 	p.bait = 1
-	equal(Rules.chance(p, "rabbit"), 0.96)
+	equal(Rules.chance(p, "rabbit"), Config.CaptureMaximum)
 end)
 test("sea equipment remains required even with top-tier rescue gear", function()
 	local p = Rules.blank(now); p.owned.tranquilizer = true

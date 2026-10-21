@@ -203,5 +203,17 @@ test("unloaded busy lost temporary and unknown-product receipts remain pending",
 	for _,id in {"",string.rep("x",201)} do equal(Receipts.process(session,id,"sprintPack",Rules,save),false) end
 	equal(saves,0); equal(session.data.stock.speedBoost,0)
 end)
+test("map and teleport products persist once through failed saves and reconnect", function()
+	local f=fixture(); local session=assert(f.store:load(1)); f.db.failures=3
+	local function save(s: any) return f.store:save(s,false) end
+	equal(Receipts.process(session,"map-purchase","canopyAccess",Rules,save),false)
+	equal(session.data.maps.canopy,true); equal(session.data.coins,100)
+	assert(Receipts.process(session,"map-purchase","canopyAccess",Rules,save)); equal(session.data.coins,100)
+	assert(Receipts.process(session,"travel-purchase","teleportPack",Rules,save)); equal(session.data.stock.teleportPass,5)
+	assert(f.store:save(session,true)); local restored=assert(f.store:load(1))
+	equal(restored.data.maps.canopy,true); equal(restored.data.stock.teleportPass,5)
+	assert(Receipts.process(restored,"travel-purchase","teleportPack",Rules,save)); equal(restored.data.stock.teleportPass,5)
+	assert(Receipts.process(restored,"map-purchase","canopyAccess",Rules,save)); equal(restored.data.coins,100)
+end)
 print(string.format("\n%d profile-store cases passed, %d failed (injected service adapter, not live DataStore)", passed, failed))
 if failed > 0 then error("Zo's Ark profile-store checks failed") end

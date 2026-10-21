@@ -2,7 +2,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local ExpeditionWorld = {}
-function ExpeditionWorld.build(world, catalog, rules, getProfile, notify, effects)
+function ExpeditionWorld.build(world, catalog, rules, getProfile, notify, effects, canAccess)
 	local lastInteraction = {}
 	local random = Random.new()
 	local function nearby(player, position, distance)
@@ -32,6 +32,7 @@ function ExpeditionWorld.build(world, catalog, rules, getProfile, notify, effect
 		prompt.MaxActivationDistance = 12; prompt.HoldDuration = 0.25; prompt.RequiresLineOfSight = false; prompt.Parent = spawn
 		prompt.Triggered:Connect(function(player)
 			if not nearby(player, spot.position + Vector3.new(0, 1, 0), 14) then return end
+			if not canAccess(player,definition.mapId) then notify(player,"Unlock this island in Travel first.","travel"); return end
 			local ok, message = rules.checkpoint(getProfile(player), spot.id)
 			if ok then player.RespawnLocation = spawn end
 			notify(player, message, if ok then "success" else "info")
@@ -56,6 +57,7 @@ function ExpeditionWorld.build(world, catalog, rules, getProfile, notify, effect
 		prompt.Triggered:Connect(function(player)
 			local humanoid = nearby(player, box.Position, 12)
 			if not humanoid then return end
+			if not canAccess(player,spot.mapId or "ark") then notify(player,"Unlock this island in Travel first.","travel"); return end
 			local ok, result = rules.openChest(getProfile(player), spot.id, random:NextNumber(), random:NextNumber(), os.time())
 			notify(player, result.message, if ok and result.kind ~= "pointsTrap" and result.kind ~= "deathTrap" then "success" else "info")
 			if not ok then return end
