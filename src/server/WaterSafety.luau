@@ -127,8 +127,7 @@ function WaterSafety:seedPickups()
 			end
 		end
 	end
-	local layout = self.world.sourceLayout
-	if layout then
+	for _, layout in self.world.plans do
 		for _, exit in layout.ShoreExits do
 			local x = (exit.x - layout.Source.pivotX) * layout.Source.scale + exit.dx * 55
 			local z = (exit.y - layout.Source.pivotY) * layout.Source.scale + exit.dy * 55

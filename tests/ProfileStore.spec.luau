@@ -154,5 +154,16 @@ test("a canceled write after external schema change cannot erase that record", f
 	equal(f.records.u_1.schema, 99); equal(f.records.u_1.data.coins, 1234)
 end)
 
+test("checkpoint and daily chest state survive lease release and reconnect", function()
+	local f = fixture(); local session = assert(f.store:load(1))
+	Rules.checkpoint(session.data, "moonstoneDock")
+	Rules.openChest(session.data, "moonstonePoint", 0.96, 0, f.adapter.now())
+	session.data.inventory.axolotl = 1; session.data.owned.lifeJacket = true
+	assert(f.store:save(session, true))
+	local restored = assert(f.store:load(1))
+	equal(restored.data.exploration.activeCheckpoint, "moonstoneDock")
+	equal(Rules.openChest(restored.data, "moonstonePoint", 0, 0, f.adapter.now()), false)
+	equal(restored.data.inventory.axolotl, 1); equal(restored.data.owned.lifeJacket, true)
+end)
 print(string.format("\n%d profile-store cases passed, %d failed (injected service adapter, not live DataStore)", passed, failed))
 if failed > 0 then error("Zo's Ark profile-store checks failed") end

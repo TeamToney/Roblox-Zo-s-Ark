@@ -35,8 +35,15 @@ function PlanWorld.build(world, part, label)
 	workspace.Terrain.WaterTransparency = 0.4
 	workspace.Terrain.WaterWaveSize = 0.12; workspace.Terrain.WaterWaveSpeed = 7
 	local waterDepth = waterY - Layout.SeabedY
-	workspace.Terrain:FillBlock(CFrame.new(0, Layout.SeabedY - 6, 0), Vector3.new(1900, 12, 1900), Enum.Material.Rock)
-	workspace.Terrain:FillBlock(CFrame.new(0, waterY - waterDepth / 2, 0), Vector3.new(1900, waterDepth, 1900), Enum.Material.Water)
+	local sea = world.config.SeaBounds
+	-- Chunked fills stay below Terrain's voxel-operation size limit.
+	for x = sea[1], sea[3] - 1, 1024 do
+		for z = sea[2], sea[4] - 1, 1024 do
+			local width, depth = math.min(1024, sea[3] - x), math.min(1024, sea[4] - z)
+			workspace.Terrain:FillBlock(CFrame.new(x + width / 2, Layout.SeabedY - 6, z + depth / 2), Vector3.new(width, 12, depth), Enum.Material.Rock)
+			workspace.Terrain:FillBlock(CFrame.new(x + width / 2, waterY - waterDepth / 2, z + depth / 2), Vector3.new(width, waterDepth, depth), Enum.Material.Water)
+		end
+	end
 	-- Extrude only dry tiles through the entire water column. The lagoon and
 	-- sea gate remain open; no water-filled tunnel exists below the island.
 	for _, column in Geometry.foundationColumns(Layout) do
@@ -64,14 +71,16 @@ function PlanWorld.build(world, part, label)
 		end
 		local habitat = room.kind == "meadow" or room.kind == "jungle" or room.kind == "summit"
 		local wallHeight = if habitat then 5 else (room.height or Layout.WallHeight)
+		local wallBottom = if room.id == "reefAlcove" then Layout.SeabedY else Layout.FloorY
+		if room.id == "reefAlcove" then wallHeight = Layout.FloorY + 3 - wallBottom end
 		for _, segment in Geometry.walls(room) do
-			stroke(model, "PlanWall", segment, Layout.FloorY, wallHeight, Layout.WallThickness, palette.wall, Enum.Material.Sandstone)
-			stroke(model, "WallCap", segment, Layout.FloorY + wallHeight, 0.25, Layout.WallThickness + 0.15, if habitat then palette.mint else palette.wood, Enum.Material.SmoothPlastic)
+			stroke(model, "PlanWall", segment, wallBottom, wallHeight, Layout.WallThickness, palette.wall, Enum.Material.Sandstone)
+			stroke(model, "WallCap", segment, wallBottom + wallHeight, 0.25, Layout.WallThickness + 0.15, if habitat then palette.mint else palette.wood, Enum.Material.SmoothPlastic)
 		end
 		if room.kind == "entry" then
 			local sign = part(model, "WelcomeSign", Vector3.new(16, 1, 1), CFrame.new(point(814, 1586, floorY + 3)), palette.navy)
 			label(sign, "WELCOME TO ZO'S ARK\nGardens • wildlife • sea expeditions", 4, 320)
-		elseif room.kind == "marine" then
+		elseif room.id == "marineHall" then
 			local sign = part(model, "MarineSign", Vector3.one, CFrame.new(point(1122, 393, floorY + 4)), palette.navy)
 			label(sign, "TIDEWATER HALL\nReef lagoon • bluewater pool • sea gate", 5, 320)
 		end
@@ -90,12 +99,13 @@ function PlanWorld.build(world, part, label)
 			bounds = {minX = a.X, maxX = b.X, minZ = a.Z, maxZ = b.Z},
 			radius = math.min(b.X - a.X, b.Z - a.Z) / 2,
 			marine = marine, count = zone.count,
+			mapId = "ark", obscure = zone.obscure == true, event = zone.event == true,
 		})
 		local signX = if marine then zone.rect[1] - 13 else x
 		local signY = if marine then y else zone.rect[2] + 3
 		local sign = part(map, zone.name .. "Sign", Vector3.new(1, 4, 1), CFrame.new(point(signX, signY, if zone.extension then waterY + 1 else floorY + 3)), palette.navy)
 		if zone.extension then sign.Shape = Enum.PartType.Ball; sign.Size = Vector3.new(4, 4, 4); sign.Color = palette.mint end
-		label(sign, string.upper(zone.name), 5, 280)
+		if not zone.obscure then label(sign, string.upper(zone.name), 5, 280) else sign:Destroy() end
 		if not marine then
 			-- Vegetation hugs the borders and leaves the middle of each habitat clear.
 			for index = 0, 3 do

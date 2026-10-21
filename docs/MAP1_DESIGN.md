@@ -20,7 +20,7 @@ The user provided `MAP 1.jpeg` as an inline architectural floor-plan image and c
 
 The base remains recognizable through its north-up orientation, entrance axis, pointed hall, flanking blocks, gallery rows and eastern hall. Roofs are omitted, habitat walls are low, and grass, trees, rocks and sea routes make it an outdoor adventure. The surrounding lawn and open-sea area are gameplay additions. The marine hall is one continuous water area with two encounter zones.
 
-The trace contains 63 simplified room outlines and eight habitat zones. Many side rooms are currently circulation or decorative space; they do not imply implemented missions, extra stores, working clinics or a second floor. Animal art is still procedural.
+The Ark trace now contains 64 simplified room outlines and 12 habitat zones, including a coral alcove and secluded side-room habitats. Other side rooms remain circulation or decorative space; room names do not imply extra stores, working clinics or a second floor. Animal art is still procedural. The two additional islands are documented in [ISLANDS_DESIGN.md](ISLANDS_DESIGN.md).
 
 ## Scale and fidelity
 

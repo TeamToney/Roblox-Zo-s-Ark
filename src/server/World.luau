@@ -2,8 +2,12 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
 
 local PlanWorld = require(script.Parent.PlanWorld)
+local IslandWorld = require(script.Parent.IslandWorld)
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZoShared")
+local Geometry = require(Shared.MapGeometry)
 
 local World = {}
 local C = {
@@ -49,7 +53,7 @@ function World.build(config)
 	local runtime = Instance.new("Folder"); runtime.Name = "ZoRuntime"; runtime.Parent = workspace
 	local actors = Instance.new("Folder"); actors.Name = "Wildlife"; actors.Parent = runtime
 	local boats = Instance.new("Folder"); boats.Name = "Boats"; boats.Parent = runtime
-	local self = {runtime = runtime, actors = actors, boats = boats, zones = {}, boatSpawns = {}, config = config}
+	local self = {runtime = runtime, actors = actors, boats = boats, zones = {}, boatSpawns = {}, config = config, plans = {}, roamTargets = {}, checkpoints = {}, checkpointSpots = {}, chestSpots = {}}
 	local imported = workspace:FindFirstChild("ZoMap")
 	if imported then
 		-- An explicit Studio map always overrides the generated Map 1 campus.
@@ -70,6 +74,22 @@ function World.build(config)
 		end
 	else
 		PlanWorld.build(self, part, label)
+		table.insert(self.plans, self.sourceLayout)
+		IslandWorld.build(self, part, label)
+		for _, plan in self.plans do
+			local function position(x, y, height)
+				local wx, wz = Geometry.world(plan.Source, x, y)
+				return Vector3.new(wx, height, wz)
+			end
+			for _, room in plan.Rooms do
+				if room.rect and room.kind ~= "marine" then
+					local x, y = Geometry.center(room.rect)
+					table.insert(self.roamTargets, {mapId = plan.Id, position = position(x, y, plan.FloorY + 0.2), width = math.min(room.rect[3] - room.rect[1], room.rect[4] - room.rect[2]) * plan.Source.scale})
+				end
+			end
+			for _, cp in plan.Checkpoints do table.insert(self.checkpointSpots, {id = cp.id, position = position(cp.x, cp.y, plan.FloorY + 0.2)}) end
+			for _, chest in plan.Chests do table.insert(self.chestSpots, {id = chest.id, position = position(chest.x, chest.y, if chest.marine then plan.WaterY else plan.FloorY + 0.2)}) end
+		end
 	end
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "ZoSpawn"; spawn.Size = Vector3.new(10, 1, 10); spawn.CFrame = self.spawn
@@ -90,10 +110,22 @@ function World.build(config)
 	local names = {meadow = "MEADOW", jungle = "CANOPY COVE", summit = "CLOUDPEAK", reef = "SUNLIT REEF", ocean = "BLUE EXPANSE"}
 	local extent = math.max(math.abs(self.hub.X), math.abs(self.hub.Z)) + 100
 	for _, zone in self.zones do
-		local point = Instance.new("Vector3Value"); point.Name = zone.name or names[zone.habitat]; point.Value = zone.center; point.Parent = mapInfo
+		if not zone.obscure then
+			local point = Instance.new("Vector3Value"); point.Name = zone.name or names[zone.habitat]; point.Value = zone.center; point.Parent = mapInfo
+		end
 		extent = math.max(extent, math.abs(zone.center.X) + zone.radius, math.abs(zone.center.Z) + zone.radius)
 	end
-	mapInfo:SetAttribute("Extent", math.max(900, extent * 2.2)); mapInfo.Parent = game:GetService("ReplicatedStorage")
+	if #self.plans > 0 then
+		local minX, minZ, maxX, maxZ = math.huge, math.huge, -math.huge, -math.huge
+		for _, plan in self.plans do
+			local x1, z1 = Geometry.world(plan.Source, plan.Bounds[1], plan.Bounds[2])
+			local x2, z2 = Geometry.world(plan.Source, plan.Bounds[3], plan.Bounds[4])
+			minX = math.min(minX, x1); minZ = math.min(minZ, z1); maxX = math.max(maxX, x2); maxZ = math.max(maxZ, z2)
+		end
+		mapInfo:SetAttribute("CenterX", (minX + maxX) / 2); mapInfo:SetAttribute("CenterZ", (minZ + maxZ) / 2)
+		mapInfo:SetAttribute("Extent", math.max(maxX - minX, maxZ - minZ) * 1.12)
+	else mapInfo:SetAttribute("Extent", math.max(900, extent * 2.2)) end
+	mapInfo.Parent = game:GetService("ReplicatedStorage")
 	self.part = part; self.label = label
 	return self
 end
@@ -150,6 +182,22 @@ function World.inWater(position)
 	return false
 end
 
+function World.route(self, origin, target, scale)
+	local path = PathfindingService:CreatePath({AgentRadius = math.max(2, scale * 4.5), AgentHeight = math.max(5, scale * 5), AgentCanJump = false, AgentCanClimb = false, WaypointSpacing = 5, Costs = {Water = math.huge}})
+	local ok = pcall(function() path:ComputeAsync(origin, target) end)
+	if not ok or path.Status ~= Enum.PathStatus.Success then return nil end
+	local points = {}
+	local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.IgnoreWater = true
+	params.FilterDescendantsInstances = {self.actors, self.boats}
+	for _, waypoint in path:GetWaypoints() do
+		if waypoint.Action == Enum.PathWaypointAction.Jump then return nil end
+		local hit = workspace:Raycast(waypoint.Position + Vector3.new(0, 10, 0), Vector3.new(0, -22, 0), params)
+		if not hit or hit.Normal.Y < 0.8 or math.abs(hit.Position.Y - (origin.Y - scale * 1.7)) > 2 then return nil end
+		table.insert(points, hit.Position + Vector3.new(0, scale * 1.7, 0))
+	end
+	return if #points > 1 and #points <= 80 then points else nil
+end
+
 function World.startBoats(self, inputEvent)
 	local records, bySeat, inputTimes = {}, {}, {}
 	for index, home in self.boatSpawns do
@@ -201,7 +249,8 @@ function World.startBoats(self, inputEvent)
 				local current = boat.model:GetPivot()
 				local rotated = current * CFrame.Angles(0, -boat.steer * dt * 1.5, 0)
 				local proposed = rotated + rotated.LookVector * boat.throttle * self.config.BoatSpeed * dt
-				local pos = proposed.Position; local allowed = Vector2.new(pos.X, pos.Z).Magnitude < self.config.MaxWorldRadius
+				local pos = proposed.Position; local sea = self.config.SeaBounds
+				local allowed = pos.X > sea[1] + 24 and pos.X < sea[3] - 24 and pos.Z > sea[2] + 24 and pos.Z < sea[4] - 24
 				-- Sweep the hull ahead to keep it out of docks and imported-map shorelines.
 				local offset = proposed.Position - current.Position
 				if offset.Magnitude > 0.01 then

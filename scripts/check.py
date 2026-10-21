@@ -13,6 +13,7 @@ subprocess.run(['luau-analyze', *(str(p) for p in pure)], check=True)
 for suite in sorted(Path('tests').glob('*.spec.luau')):
     subprocess.run(['luau', str(suite)], check=True)
 subprocess.run(['python3', 'scripts/map_assets.py'], check=True)
+subprocess.run(['python3', 'scripts/island_assets.py'], check=True)
 
 sources = sorted(Path('src').rglob('*.luau'))
 for path in sources:

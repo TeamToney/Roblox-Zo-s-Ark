@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("ZoShared")
 local Catalog = require(Shared.Catalog)
 local Config = require(Shared.Config)
 local Layout = require(Shared.MapLayout)
+local Islands = require(Shared.IslandLayouts)
 local Geometry = require(Shared.MapGeometry)
 
 local palette = {
@@ -189,94 +190,104 @@ local function challenges()
 		text(frame, "+" .. challenge.coins .. " coins / +" .. challenge.points .. " pts", 11, palette.gold, UDim2.fromOffset(14, 93), UDim2.new(1, -144, 0, 20), true)
 		button(frame, if claimed then "Claimed" else (if ready then "Claim prize" else "In progress"), UDim2.new(1, -120, 0, 78), UDim2.fromOffset(106, 33), function() send("claim", id) end, not ready)
 	end
+	section("Island expeditions", "Checkpoints save your respawn. Explore both new islands and claim each expedition prize once.", 100)
+	for _, id in Catalog.ExpeditionOrder do
+		local definition, progress = Catalog.Expeditions[id], state.expeditions[id]
+		local ready = progress.value >= progress.goal and not progress.claimed
+		local frame = card(150)
+		text(frame, definition.name, 17, palette.cream, UDim2.fromOffset(14, 8), UDim2.new(1, -28, 0, 28), true)
+		text(frame, definition.description, 12, palette.muted, UDim2.fromOffset(14, 38), UDim2.new(1, -28, 0, 42))
+		progressBar(frame, progress.value, progress.goal, 90)
+		text(frame, progress.value .. "/" .. progress.goal .. " • +" .. definition.coins .. " coins / +" .. definition.points .. " pts", 11, palette.gold, UDim2.fromOffset(14, 112), UDim2.new(1, -144, 0, 25), true)
+		button(frame, if progress.claimed then "Claimed" elseif ready then "Claim prize" else "Explore", UDim2.new(1, -120, 0, 107), UDim2.fromOffset(106, 32), function() send("claim", id) end, not ready)
+	end
 	local captures = if state.profile.event.id == state.event.id then state.profile.event.captures else 0
 	local claimed = state.profile.event.id == state.event.id and state.profile.event.claimed
-	local frame = section("AURORA TIDE  /  Limited encounter", "Collect three Aurora Mantas in the reef habitat during the same tide. Requires Tier 3 gear and a Reef Snorkel.", 188)
+	local frame = section("AURORA TIDE  /  Limited encounter", "Find the secluded coral alcove in Tidewater Hall. Rescue three Aurora Mantas in one tide. Requires Tier 3 gear and a Reef Snorkel.", 188)
 	text(frame, number(math.min(captures, Config.EventGoal)) .. "/3 mantas • 350 coins + 250 pts + Aurora Voyager title", 12, palette.gold, UDim2.fromOffset(14, 113), UDim2.new(1, -28, 0, 30), true)
 	button(frame, if claimed then "Prize claimed" else "Claim tide prize", UDim2.fromOffset(14, 147), UDim2.fromOffset(180, 30), function() send("claim", "event") end, not state.event.active or captures < Config.EventGoal or claimed)
 end
 
 local function chart()
-	title.Text = "Your sanctuary chart"
-	description.Text = "Map 1 • Ark base + outdoor biomes + open sea • North is up."
+	title.Text = "Your archipelago chart"
+	description.Text = "Ark Sanctuary • Canopy Reach • Moonstone Isle • North is up."
 	local side = math.max(220, math.min(panel.AbsoluteSize.X - 56, 480))
-	local frame = card(side + 32)
-	frame.ClipsDescendants = true; frame.BackgroundColor3 = Color3.fromRGB(27, 84, 98)
+	local frame = card(side + 32); frame.ClipsDescendants = true; frame.BackgroundColor3 = Color3.fromRGB(27, 84, 98)
 	local plot = make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(side, side), BackgroundTransparency = 1, ClipsDescendants = true}, frame)
 	for i = 1, 4 do
 		make("Frame", {BackgroundColor3 = palette.muted, BackgroundTransparency = 0.87, BorderSizePixel = 0, Position = UDim2.fromScale(i / 5, 0), Size = UDim2.new(0, 1, 1, 0)}, plot)
 		make("Frame", {BackgroundColor3 = palette.muted, BackgroundTransparency = 0.87, BorderSizePixel = 0, Position = UDim2.fromScale(0, i / 5), Size = UDim2.new(1, 0, 0, 1)}, plot)
 	end
-	local mapInfo = ReplicatedStorage:FindFirstChild("ZoMapInfo")
-	local hybrid = mapInfo and mapInfo:GetAttribute("MapKind") == "hybrid"
-	local extent = if mapInfo then (mapInfo:GetAttribute("Extent") or 1400) else 1400
+	local info = ReplicatedStorage:FindFirstChild("ZoMapInfo")
+	local hybrid = info and info:GetAttribute("MapKind") == "hybrid"
+	local extent = if info then info:GetAttribute("Extent") or 2200 else 2200
+	local cx, cz = if info then info:GetAttribute("CenterX") or 0 else 0, if info then info:GetAttribute("CenterZ") or 0 else 0
 	local function site(caption, x, z, color)
-		local px, py = 0.5 + x / extent, 0.5 + z / extent
-		local longName = #caption > 5
-		local dot = make("TextLabel", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(px, py), Size = UDim2.fromOffset(if #caption > 2 and not longName then 38 else 18, 18), BackgroundColor3 = color, BorderSizePixel = 0, Text = if longName then "" else caption, Font = Enum.Font.GothamBold, TextSize = 9, TextColor3 = palette.ink, ZIndex = 4}, plot)
-		corner(dot, 6)
-		if longName then
-			local name = text(plot, caption, 10, palette.cream, UDim2.new(px, -55, py, 13), UDim2.fromOffset(110, 30), true)
+		local px, py = 0.5 + (x - cx) / extent, 0.5 + (z - cz) / extent
+		local long = #caption > 5
+		local dot = make("TextLabel", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(px, py), Size = UDim2.fromOffset(if #caption > 2 and not long then 34 else 16, 16), BackgroundColor3 = color, BorderSizePixel = 0, Text = if long then "" else caption, Font = Enum.Font.GothamBold, TextSize = 8, TextColor3 = palette.ink, ZIndex = 4}, plot)
+		corner(dot, 5)
+		if long then
+			local name = text(plot, caption, 10, palette.cream, UDim2.new(px, -55, py, 12), UDim2.fromOffset(110, 30), true)
 			name.TextXAlignment = Enum.TextXAlignment.Center; name.ZIndex = 4
 		end
 	end
 	if hybrid then
+		local plans = {Layout}; for _, plan in Islands.Islands do table.insert(plans, plan) end
 		local colors = {room = Color3.fromRGB(185, 202, 185), meadow = Color3.fromRGB(153, 194, 119), jungle = Color3.fromRGB(80, 146, 111), summit = palette.cream, atrium = palette.gold, entry = Color3.fromRGB(232, 200, 144)}
-		local function rectangle(rect, color)
-			local x1, z1 = Geometry.world(Layout.Source, rect[1], rect[2])
-			local x2, z2 = Geometry.world(Layout.Source, rect[3], rect[4])
-			make("Frame", {Position = UDim2.fromScale(0.5 + x1 / extent, 0.5 + z1 / extent), Size = UDim2.fromScale((x2 - x1) / extent, (z2 - z1) / extent), BackgroundColor3 = color, BorderSizePixel = 0, ZIndex = 1}, plot)
-		end
-		for _, tile in Geometry.floorTiles(Layout) do rectangle(tile, Color3.fromRGB(104, 140, 113)) end
-		for _, rect in Layout.Corridors do
-			for _, tile in Geometry.floorTiles({Bounds = rect, WaterCuts = Layout.WaterCuts}) do rectangle(tile, Color3.fromRGB(200, 209, 183)) end
-		end
-		for _, court in Layout.Courtyards do rectangle(court.rect, colors[court.habitat]) end
-		for _, room in Layout.Rooms do
-			if room.rect and room.kind ~= "marine" then rectangle(room.rect, colors[room.kind] or colors.room) end
-			if room.polygon then
-				local low, high = math.huge, -math.huge
-				for _, vertex in room.polygon do low = math.min(low, vertex[2]); high = math.max(high, vertex[2]) end
-				for y = low, high - 1, 4 do
-					local span = Geometry.scanline(room.polygon, y + 2)
-					if #span == 2 then rectangle({span[1], y, span[2], math.min(high, y + 4)}, colors.atrium) end
+		for _, plan in plans do
+			local function rectangle(rect, color)
+				local x1, z1 = Geometry.world(plan.Source, rect[1], rect[2])
+				local x2, z2 = Geometry.world(plan.Source, rect[3], rect[4])
+				make("Frame", {Position = UDim2.fromScale(0.5 + (x1 - cx) / extent, 0.5 + (z1 - cz) / extent), Size = UDim2.fromScale((x2 - x1) / extent, (z2 - z1) / extent), BackgroundColor3 = color, BorderSizePixel = 0, ZIndex = 1}, plot)
+			end
+			for _, tile in Geometry.floorTiles(plan) do rectangle(tile, Color3.fromRGB(104, 140, 113)) end
+			for _, rect in plan.Corridors do
+				for _, tile in Geometry.floorTiles({Bounds = rect, WaterCuts = plan.WaterCuts}) do rectangle(tile, Color3.fromRGB(200, 209, 183)) end
+			end
+			for _, court in plan.Courtyards do rectangle(court.rect, colors[court.habitat]) end
+			for _, room in plan.Rooms do
+				if room.rect and room.kind ~= "marine" then rectangle(room.rect, colors[room.kind] or colors.room) end
+				if room.polygon then
+					local low, high = math.huge, -math.huge
+					for _, v in room.polygon do low = math.min(low, v[2]); high = math.max(high, v[2]) end
+					for y = low, high - 1, 4 do
+						local span = Geometry.scanline(room.polygon, y + 2)
+						if #span == 2 then rectangle({span[1], y, span[2], math.min(high, y + 4)}, colors[room.kind] or colors.room) end
+					end
+				end
+				for _, line in Geometry.walls(room) do
+					local x1, z1 = Geometry.world(plan.Source, line[1], line[2]); local x2, z2 = Geometry.world(plan.Source, line[3], line[4])
+					make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5 + ((x1 + x2) / 2 - cx) / extent, 0.5 + ((z1 + z2) / 2 - cz) / extent), Size = UDim2.fromOffset(math.sqrt((x2 - x1)^2 + (z2 - z1)^2) / extent * side, 1), Rotation = math.deg(math.atan2(z2 - z1, x2 - x1)), BackgroundColor3 = palette.ink, BorderSizePixel = 0, ZIndex = 2}, plot)
 				end
 			end
-			for _, line in Geometry.walls(room) do
-				local x1, z1 = Geometry.world(Layout.Source, line[1], line[2])
-				local x2, z2 = Geometry.world(Layout.Source, line[3], line[4])
-				make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5 + (x1 + x2) / 2 / extent, 0.5 + (z1 + z2) / 2 / extent), Size = UDim2.fromOffset(math.sqrt((x2 - x1)^2 + (z2 - z1)^2) / extent * side, 1), Rotation = math.deg(math.atan2(z2 - z1, x2 - x1)), BackgroundColor3 = palette.ink, BorderSizePixel = 0, ZIndex = 2}, plot)
+			for _, cp in plan.Checkpoints do
+				if state.profile.exploration.checkpoints[cp.id] then
+					local x, z = Geometry.world(plan.Source, cp.x, cp.y)
+					site("CP", x, z, if state.profile.exploration.activeCheckpoint == cp.id then palette.gold else palette.mint)
+				end
+			end
+			if plan.Dock and plan.Dock.x then
+				local x, z = Geometry.world(plan.Source, plan.Dock.x, plan.Dock.y); site(plan.Name, x, z, palette.mint)
+			else
+				local x, z = Geometry.world(plan.Source, Layout.Hub[1], Layout.Hub[2]); site("ARK", x, z, palette.gold)
+			end
+			for _, exit in plan.ShoreExits do
+				if not plan.Dock.x or exit.x ~= plan.Dock.x or exit.y ~= plan.Dock.y then
+					local x, z = Geometry.world(plan.Source, exit.x, exit.y); site("EXIT", x, z, palette.mint)
+				end
 			end
 		end
-		for index, zone in Layout.Zones do
-			local x, y = Geometry.center(zone.rect)
-			local wx, wz = Geometry.world(Layout.Source, x, y)
-			site(tostring(index), wx, wz, if zone.habitat == "reef" or zone.habitat == "ocean" then palette.gold else palette.mint)
-		end
-		local hx, hz = Geometry.world(Layout.Source, Layout.Hub[1], Layout.Hub[2]); site("ARK", hx, hz, palette.gold)
-		local sx, sz = Geometry.world(Layout.Source, Layout.Spawn[1], Layout.Spawn[2]); site("START", sx, sz, palette.cream)
-		for _, exit in Layout.ShoreExits do
-			local ex, ez = Geometry.world(Layout.Source, exit.x, exit.y); site("EXIT", ex, ez, palette.mint)
-		end
 	else
-		description.Text = "Your imported world • Coral dot: you. Markers: habitats and the Ark."
-		if mapInfo then
-		for _, point in mapInfo:GetChildren() do
-				if point:IsA("Vector3Value") then site(point.Name, point.Value.X, point.Value.Z, palette.mint) end
-			end
-		end
+		description.Text = "Your imported world • Coral dot: you."
+		if info then for _, point in info:GetChildren() do if point:IsA("Vector3Value") then site(point.Name, point.Value.X, point.Value.Z, palette.mint) end end end
 	end
-	local dot = make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(9, 9), BackgroundColor3 = palette.coral, BorderSizePixel = 0, ZIndex = 5}, plot); corner(dot, 10)
-	markers = {player = dot, extent = extent}
-	text(plot, "N ↑", 13, palette.cream, UDim2.fromOffset(2, 2), UDim2.fromOffset(50, 22), true).ZIndex = 4
-	if hybrid then
-		local legend = {}
-		for index, zone in Layout.Zones do table.insert(legend, index .. "  /  " .. zone.name) end
-		section("Find your next discovery", table.concat(legend, "\n"), 216)
-		section("From the base to the open sea", "Enter the pointed Ark Atrium from its north side for gear and trades. Tidewater Hall has southern boarding steps and an eastern sea gate. Four EXIT markers show stairs back onto the island. You are the coral dot.", 144)
-	else
-		section("Explore your world", "You are the coral dot. Follow the markers to habitats, the Ark station and your map's expedition dock. Boats return after 45 seconds without occupants.", 126)
-	end
+	local dot = make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(8, 8), BackgroundColor3 = palette.coral, BorderSizePixel = 0, ZIndex = 5}, plot); corner(dot, 8)
+	local count = 0; for _ in state.profile.exploration.checkpoints do count += 1 end
+	markers = {player = dot, extent = extent, centerX = cx, centerZ = cz, signature = count .. ":" .. state.profile.exploration.activeCheckpoint}
+	text(plot, "N ↑", 12, palette.cream, UDim2.fromOffset(2, 2), UDim2.fromOffset(50, 22), true).ZIndex = 4
+	section("Sail the three islands", "The Ark is west. Canopy Reach lies northeast; Moonstone Isle lies southeast. Both have free boats and landing checkpoints. CP marks discovered checkpoints; gold is your active respawn. EXIT marks shore stairs.", 145)
+	section("Search beyond the main galleries", "Rare and Legendary animals live in out-of-the-way rooms, alcoves and coves. Their habitats and surprise chests are not marked. Activate checkpoints and check the expedition board for island challenges.", 140)
 end
 
 local function guide()
@@ -285,10 +296,14 @@ local function guide()
 	local info = ReplicatedStorage:FindFirstChild("ZoMapInfo")
 	local hybrid = info and info:GetAttribute("MapKind") == "hybrid"
 	section("01  /  Meet the meadow", if hybrid then "From the southern entrance, visit Meadow Courtyard west of the central avenue. Approach a rabbit or fox and hold Rescue. Your starter kit handles Tier 1 animals." else "Follow the chart to a meadow habitat. Approach a rabbit or fox and hold Rescue. Your starter kit handles Tier 1 animals.", 136)
-	section("02  /  Bring them home", if hybrid then "Head north to the pointed Ark Atrium and enter from its north side. At Ark Outfitters, use your journal to trade animals into the sanctuary. Discoveries and Ark Points stay." else "Return to Ark Outfitters using its distance indicator. Use your journal to trade animals into the sanctuary; discoveries and Ark Points stay.", 140)
+	section("02  /  Bring them home", if hybrid then "Head north to the pointed Ark Atrium and enter from its north side. At Ark Outfitters, trade animals through the journal. Discoveries stay. Surprise chest traps can reduce Ark Points." else "Return to Ark Outfitters using its distance indicator. Trade animals through the journal; discoveries stay.", 140)
 	section("03  /  Prepare an expedition", "Buy the Ranger Net for larger animals. A Reef Snorkel opens more sea encounters. Permanent equipment is used automatically; no item equipping is required.", 126)
 	section("04  /  Sail beyond the base", if hybrid then "Tidewater Hall is in the northeast. Descend the boarding steps in its southern pool to reach a free boat, then sail through the eastern sea gate. Swim or sail close to marine animals." else "Find your world's expedition dock and borrow a free boat. Sit to steer and jump to leave. Swim or sail close to marine animals to rescue them.", 148)
 	section("05  /  Follow the Aurora Tide", "An eight-minute event returns every thirty minutes. Rescue three Aurora Mantas at the reef, then claim a special title and bonus rewards on the expedition board.", 126)
+	local checkpoint = Catalog.Checkpoints[state.profile.exploration.activeCheckpoint]
+	section("Island expeditions & checkpoints", "Sail northeast to Canopy Reach or southeast to Moonstone Isle. Activate checkpoints to save your respawn, then finish island challenges on the expedition board. Current respawn: " .. (if checkpoint then checkpoint.name else "Ark southern entrance") .. ".", 155)
+	section("Surprise chests", "Each chest is free to open once per explorer per UTC day. Find coins, hidden animals or permanent equipment; some chests trap you, remove points or kill your character. Death returns you to your checkpoint. Your collected animals and gear stay.", 160)
+	section("Faster captures, moving wildlife", "Hold Rescue for 0.25 seconds. Common wildlife can wander through connected rooms. Look beyond the main galleries for Rare and Legendary wildlife: secluded rooms, coral alcoves and hidden coves.", 138)
 	section("Swim safely", "Start with 30 seconds of endurance. A snorkel gives 60s; the diving kit gives 180s. A life jacket adds 60s to either. Rest on land or in a boat to recover. At zero endurance, health drains: look for marked shore steps, orange life rings and green first-aid floats.", 176)
 	section("Water recovery pickups", "Life rings restore 15s and pause fatigue for 20s. First-aid floats restore 25 health and 20s of endurance. Hold their nearby prompt while swimming. Used pickups return after 90 seconds.", 144)
 	section("Make every journey count", "Every 10 walking steps earns 2 coins + 1 Ark Point. Every 10 swimming strokes earns 3 coins + 2 points. Boats earn distance milestones, not step or stroke bonuses. The 500-stud exploration reward and daily challenges still apply.", 152)
@@ -304,7 +319,8 @@ render = function()
 	for key, b in navButtons do b.BackgroundColor3 = if key == currentPage and panel.Visible then palette.soft else palette.ink end
 	-- The floor plan is static. Reuse it while fresh snapshots update the HUD
 	-- and the separate player dot, rather than rebuilding hundreds of lines.
-	if currentPage == "map" and markers.player and markers.player.Parent then return end
+	local visited = 0; for _ in state.profile.exploration.checkpoints do visited += 1 end
+	if currentPage == "map" and markers.player and markers.player.Parent and markers.signature == visited .. ":" .. state.profile.exploration.activeCheckpoint then return end
 	for _, child in scroll:GetChildren() do if child:IsA("GuiObject") then child:Destroy() end end
 	markers = {}
 	if currentPage == "journal" then journal()
@@ -433,6 +449,6 @@ RunService.RenderStepped:Connect(function(dt)
 		location.Text = if distance <= Config.ShopDistance then "ARK OUTFITTERS  /  Trading & gear available" else "ARK OUTFITTERS  /  " .. number(distance) .. " studs away"
 	end
 	if root and markers.player and markers.player.Parent then
-		markers.player.Position = UDim2.fromScale(math.clamp(0.5 + root.Position.X / markers.extent, 0, 1), math.clamp(0.5 + root.Position.Z / markers.extent, 0, 1))
+		markers.player.Position = UDim2.fromScale(math.clamp(0.5 + (root.Position.X - markers.centerX) / markers.extent, 0, 1), math.clamp(0.5 + (root.Position.Z - markers.centerZ) / markers.extent, 0, 1))
 	end
 end)

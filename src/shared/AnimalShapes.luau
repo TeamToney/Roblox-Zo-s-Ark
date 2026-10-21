@@ -21,21 +21,21 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 			piece("EyeHighlight", {0.07, 0.07, 0.06}, {side * x, y + 0.06, z - 0.09}, cream)
 		end
 	end
-	local function coatMark(name: string, side: number, y: number, z: number, tint: {number}, inner: boolean?)
+	local function coatMark(name: string, side: number, y: number, z: number, tint: {number}, inner: boolean?, stripe: boolean?)
 		local x = side * 1.05 * math.sqrt(math.max(0, 1 - (y / 0.825)^2 - (z / 1.6)^2))
 		local nx, ny, nz = x / 1.05^2, y / 0.825^2, z / 1.6^2
 		local length = math.sqrt(nx^2 + ny^2 + nz^2)
 		nx /= length; ny /= length; nz /= length
 		local lift = if inner then 0.045 else 0.015
-		piece(name, if inner then {0.07, 0.11, 0.14} else {0.07, 0.3, 0.35}, {x + nx * lift, y + ny * lift, z + nz * lift}, tint, nil, {0, math.deg(math.atan2(-nz, nx)), math.deg(math.asin(ny))})
+		piece(name, if inner then {0.07, 0.11, 0.14} elseif stripe then {0.07, 0.6, 0.13} else {0.07, 0.3, 0.35}, {x + nx * lift, y + ny * lift, z + nz * lift}, tint, nil, {0, math.deg(math.atan2(-nz, nx)), math.deg(math.asin(ny))})
 	end
-	local function legs(long: boolean, hoof: boolean)
+	local function legs(long: boolean, hoof: boolean, darkFeet: boolean?)
 		for side = -1, 1, 2 do
 			for _, z in {-0.9, 1} do
 				local name = "leg" .. side .. ":" .. z
 				joint(name, {side * 0.7, -0.35, z}, "x", if (side == -1) == (z < 0) then 0 else math.pi, 0.35)
 				piece("Leg", {if long then 0.36 else 0.5, 1.1, 0.5}, {side * 0.7, -0.85, z}, fur, "block", nil, name)
-				piece(if hoof then "Hoof" else "Paw", {0.58, 0.33, 0.8}, {side * 0.7, -1.48, z - 0.12}, if hoof then dark else fur, "block", nil, name)
+				piece(if hoof then "Hoof" else "Paw", {0.58, 0.33, 0.8}, {side * 0.7, -1.48, z - 0.12}, if hoof or darkFeet then dark else fur, "block", nil, name)
 			end
 		end
 	end
@@ -59,26 +59,54 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 		end
 		for side = -1, 1, 2 do piece("PectoralFin", {0.9, 0.18, 1.1}, {side * 0.87, -0.25, -0.6}, {248, 202, 85}, "wedge", {0, side * 20, side * 15}) end
 		eyes(0.57, 0.3, -2.05)
-	elseif form == "dolphin" or form == "whale" then
+	elseif form == "dolphin" or form == "whale" or form == "seal" or form == "shark" then
 		local whale = form == "whale"
+		local seal, shark = form == "seal", form == "shark"
 		piece("StreamlinedBody", {if whale then 2.8 else 2.15, 1.9, 4.8}, {0, 0, 0})
 		piece("PaleUnderside", {1.8, 0.45, 3.7}, {0, -0.67, -0.2}, cream)
-		piece("MelonHead", {if whale then 2.6 else 1.8, 1.65, 2.15}, {0, 0.05, -1.8})
-		piece(if whale then "BroadMuzzle" else "DolphinBeak", {if whale then 2.1 else 0.7, 0.55, if whale then 1.1 else 1.6}, {0, -0.22, -2.9})
-		piece("MouthLine", {if whale then 1.8 else 0.6, 0.06, 0.15}, {0, -0.38, if whale then -3.43 else -3.66}, dark, "block")
-		piece("DorsalFin", {0.25, if whale then 0.8 else 1.3, 1.5}, {0, 1.03, 0.6}, fur, "wedge", {0, 180, 0})
-		piece("Blowhole", {0.35, 0.06, 0.27}, {0, 0.83, -1.8}, dark)
-		joint("tail", {0, 0, 1.7}, "x", 0, 0.24)
+		piece(if shark then "HammerHead" else "MelonHead", {if shark then 3.4 elseif whale then 2.6 else 1.8, if shark then 0.85 else 1.65, if shark then 1.3 else 2.15}, {0, 0.05, if shark then -2.2 else -1.8})
+		piece(if whale or shark then "BroadMuzzle" elseif seal then "SealMuzzle" else "DolphinBeak", {if whale or shark then 2.1 elseif seal then 1.1 else 0.7, 0.55, if whale then 1.1 elseif seal or shark then 0.8 else 1.6}, {0, -0.22, if seal then -2.7 else -2.9})
+		piece("MouthLine", {if whale or shark then 1.8 else 0.6, 0.06, 0.15}, {0, -0.38, if seal then -3.12 elseif shark then -3.32 elseif whale then -3.43 else -3.66}, dark, "block")
+		if not seal then piece("DorsalFin", {0.25, if whale then 0.8 else 1.3, 1.5}, {0, 1.03, 0.6}, fur, "wedge", {0, 180, 0}) end
+		if not seal and not shark then piece("Blowhole", {0.35, 0.06, 0.27}, {0, 0.83, -1.8}, dark) end
+		joint("tail", {0, 0, 1.7}, if shark then "y" else "x", 0, 0.24)
 		piece("TailPeduncle", {1.15, 0.85, 1.5}, {0, 0, 2.25}, fur, nil, nil, "tail")
 		for side = -1, 1, 2 do
-			piece("HorizontalFluke", {0.25, 2, 1.25}, {side * 1, 0, 3.05}, fur, "wedge", {0, side * 22, side * -90}, "tail")
+			if not shark then piece(if seal then "HindFlipper" else "HorizontalFluke", {0.25, if seal then 1.2 else 2, 1.25}, {side * (if seal then 0.6 else 1), 0, 3.05}, fur, "wedge", {0, side * 22, side * -90}, "tail") end
 			local name = "flipper" .. side; joint(name, {side * 0.8, -0.2, -0.7}, "z", side, 0.18)
 			piece("PectoralFlipper", {1.8, 0.23, 1.25}, {side * 1.45, -0.4, -0.35}, fur, "wedge", {0, side * 30, side * 12}, name)
+		end
+		if shark then
+			piece("VerticalSharkTail", {0.25, 2.8, 1.3}, {0, 0.2, 3.05}, fur, "wedge", {0, 180, 0}, "tail")
+			for side = -1, 1, 2 do
+				for index = 1, 3 do piece("SharkGill", {0.06, 0.6, 0.1}, {side * 1.02, 0, -0.9 + index * 0.28}, dark, "block") end
+			end
+		elseif seal then
+			piece("SealNose", {0.3, 0.2, 0.17}, {0, -0.08, -3.12}, dark)
+			for side = -1, 1, 2 do
+				for index = 1, 2 do piece("Whisker", {0.8, 0.06, 0.06}, {side * 0.6, -0.2 + index * 0.13, -3.02}, cream, "block", {0, 0, side * index * 8}) end
+			end
 		end
 		if whale then
 			for _, x in {-0.55, 0, 0.55} do piece("ThroatPleat", {0.06, 0.07, 1.75}, {x, -0.91, -1.1}, {153, 180, 187}, "block") end
 		end
-		eyes(if whale then 1.08 else 0.76, 0.22, -2.46)
+		eyes(if shark then 1.44 elseif whale then 1.08 else 0.76, if shark then 0.1 else 0.22, if shark then -2.55 else -2.46)
+	elseif form == "axolotl" then
+		piece("AxolotlBody", {1.5, 1.1, 3}, {0, 0, 0})
+		piece("WideAxolotlHead", {2.1, 1.1, 1.6}, {0, 0.1, -1.65})
+		joint("tail", {0, 0, 1.1}, "y", 0, 0.3)
+		piece("FinnedAxolotlTail", {0.28, 1.25, 2.1}, {0, 0, 2.15}, {219, 139, 164}, nil, nil, "tail")
+		for side = -1, 1, 2 do
+			for index = 1, 3 do
+				piece("ExternalGill", {0.22, 0.85, 0.24}, {side * (0.98 + index * 0.19), 0.5, -1.9 + index * 0.38}, {202, 105, 140}, "block", {0, 0, side * -25})
+				piece("GillFeather", {0.55, 0.17, 0.25}, {side * (1.08 + index * 0.19), 0.8, -1.9 + index * 0.38}, {238, 144, 172})
+			end
+			for _, z in {-0.7, 0.9} do
+				piece("AxolotlLeg", {0.7, 0.3, 0.4}, {side * 0.85, -0.4, z}, fur, "block")
+				piece("AxolotlFoot", {0.45, 0.2, 0.6}, {side * 1.1, -0.55, z - 0.1}, cream, "block")
+			end
+		end
+		eyes(0.67, 0.35, -2.3)
 	elseif form == "turtle" then
 		piece("Body", {2.2, 0.85, 3.1}, {0, -0.1, 0})
 		piece("DomedShell", {2.95, 1.35, 3.55}, {0, 0.4, 0}, {46, 104, 75})
@@ -112,11 +140,12 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 		piece("WhipTail", {0.18, 0.16, 2.7}, {0, 0, 2.65}, fur, "block", nil, "tail")
 		eyes(0.96, 0.3, -1.5)
 	elseif form == "bird" then
-		local parrot = species.habitat == "jungle"
-		local wingColor = if parrot then {51, 122, 181} else {101, 82, 64}
+		local fan = species.pattern == "fan"
+		local parrot = species.habitat == "jungle" and not fan
+		local wingColor = if fan then {45, 118, 97} elseif parrot then {51, 122, 181} else {101, 82, 64}
 		piece("UprightBody", {1.65, 2.05, 2.1}, {0, 0, 0})
-		piece("Breast", {1.2, 1.6, 0.35}, {0, -0.1, -0.9}, if parrot then fur else cream)
-		piece("BirdHead", {1.3, 1.25, 1.35}, {0, 1.1, -0.65}, if parrot then fur else cream)
+		piece("Breast", {1.2, 1.6, 0.35}, {0, -0.1, -0.9}, if parrot or fan then fur else cream)
+		piece("BirdHead", {1.3, 1.25, 1.35}, {0, 1.1, -0.65}, if parrot or fan then fur else cream)
 		piece("HookedBeak", {0.57, 0.65, 0.8}, {0, 0.92, -1.43}, if parrot then dark else {236, 185, 69}, "wedge", {0, 180, 0})
 		for side = -1, 1, 2 do
 			piece("BirdLeg", {0.22, 0.55, 0.25}, {side * 0.45, -1.18, -0.05}, {212, 163, 74}, "block")
@@ -129,6 +158,14 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 		if parrot then
 			for side = -1, 1, 2 do piece("MacawFacePatch", {0.18, 0.6, 0.6}, {side * 0.62, 1.15, -1.02}, cream) end
 		else piece("CrownFeathers", {0.6, 0.5, 0.65}, {0, 1.77, -0.32}, dark, "wedge") end
+		if fan then
+			for index = -3, 3 do
+				local angle = index * 0.23; local x, y = math.sin(angle), math.cos(angle)
+				piece("PeacockFan", {0.55, 2.8, 0.2}, {x * 1.2, -0.1 + y * 1.2, 1.15}, {50, 128, 91}, nil, {0, 0, -math.deg(angle)})
+				piece("FanEye", {0.32, 0.45, 0.12}, {x * 2.15, -0.1 + y * 2.15, 1.01}, {216, 186, 73})
+				piece("FanEyeCenter", {0.16, 0.24, 0.13}, {x * 2.15, -0.1 + y * 2.15, 0.95}, {44, 105, 153})
+			end
+		end
 		eyes(0.58, 1.25, -1.21)
 	elseif form == "monkey" then
 		piece("UprightTorso", {1.8, 2.05, 1.7}, {0, 0, 0})
@@ -169,21 +206,29 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 		eyes(0.62, 0.88, -2.17)
 	else
 		local deer = form == "deer"; local goat = form == "goat"; local fox = form == "fox"
-		piece("Torso", {if fox then 1.7 else 2.1, 1.65, 3.2}, {0, 0, 0})
+		local rodent = form == "rodent"
+		piece("Torso", {if fox then 1.7 elseif rodent then 2.3 else 2.1, if rodent then 1.8 else 1.65, if rodent then 3.5 else 3.2}, {0, if rodent then -0.4 else 0, 0})
 		piece("Chest", {1.6, 1.6, 1.3}, {0, 0.1, -0.95}, if fox or goat then cream else fur)
-		legs(deer or goat, deer or goat)
-		piece("Neck", {0.95, if deer or goat then 1.6 else 0.9, 1.05}, {0, if deer or goat then 0.85 else 0.4, -1.35})
-		piece("Head", {if fox then 1.3 else 1.5, 1.3, 1.6}, {0, if deer or goat then 1.5 else 0.65, -1.9})
-		local headY = if deer or goat then 1.5 else 0.65
-		piece("Muzzle", {if fox then 0.65 else 1, 0.6, if fox then 1.2 else 0.85}, {0, headY - 0.25, -2.7}, cream)
-		piece("Nose", {0.33, 0.23, 0.2}, {0, headY - 0.07, if fox then -3.31 else -3.15}, dark)
+		legs(deer or goat, deer or goat, fox or form == "raccoon" or form == "panda")
+		piece("Neck", {0.95, if deer or goat then 1.6 elseif rodent then 0.75 else 0.9, 1.05}, {0, if deer or goat then 0.85 elseif rodent then 0.1 else 0.4, -1.35})
+		local headY = if deer or goat then 1.5 elseif rodent then 0.15 else 0.65
+		piece("Head", {if fox then 1.3 elseif rodent then 1.7 else 1.5, 1.3, if rodent then 1.9 else 1.6}, {0, headY, if rodent then -1.75 else -1.9})
+		piece("Muzzle", {if fox then 0.65 elseif rodent then 1.35 else 1, 0.6, if fox then 1.2 elseif rodent then 0.7 else 0.85}, {0, headY - 0.25, -2.7}, cream)
+		piece("Nose", {0.33, 0.23, 0.2}, {0, headY - 0.07, if fox then -3.31 elseif rodent then -3.08 else -3.15}, dark)
 		for side = -1, 1, 2 do
-			piece("PointedEar", {0.55, if fox then 1 else 0.65, 0.5}, {side * 0.63, headY + 0.85, -1.75}, fur, "wedge", {0, if side == 1 then 180 else 0, 0})
-			piece("EarInside", {0.26, 0.4, 0.09}, {side * 0.63, headY + 0.83, -2.03}, pink, "block")
+			local rounded = form == "rodent" or form == "raccoon" or form == "panda"
+			piece(if rounded then "RoundEar" else "PointedEar", {0.55, if fox then 1 elseif rounded then 0.5 else 0.65, 0.5}, {side * 0.63, headY + (if rounded then 0.7 else 0.85), -1.75}, fur, if rounded then "ball" else "wedge", {0, if side == 1 then 180 else 0, 0})
+			piece("EarInside", {0.26, if rounded then 0.24 else 0.4, 0.09}, {side * 0.63, headY + (if rounded then 0.7 else 0.83), -2.03}, pink, "block")
 		end
 		joint("tail", {0, 0.1, 1.3}, "y", 0, 0.18)
-		piece(if fox then "BushyTail" else "LongTail", {if fox then 1 else 0.38, if fox then 0.85 else 0.4, if deer or goat then 0.9 else 2.1}, {0, 0.1, if deer or goat then 1.85 else 2.35}, fur, nil, nil, "tail")
+		if not rodent then piece(if fox then "BushyTail" else "LongTail", {if fox then 1 else 0.38, if fox then 0.85 else 0.4, if deer or goat then 0.9 else 2.1}, {0, 0.1, if deer or goat then 1.85 else 2.35}, fur, nil, nil, "tail") end
 		if fox then piece("WhiteTailTip", {0.77, 0.7, 0.7}, {0, 0.1, 3.35}, cream, nil, nil, "tail") end
+		if form == "raccoon" or form == "panda" then
+			for side = -1, 1, 2 do piece("FaceMask", {0.45, 0.45, 0.2}, {side * 0.56, headY + 0.1, -2.4}, if form == "panda" then cream else dark) end
+			for index = 1, 4 do piece("TailRing", {0.46, 0.45, 0.15}, {0, 0.1, 1.55 + index * 0.37}, if form == "panda" then cream else dark, nil, nil, "tail") end
+		elseif form == "boar" then
+			for side = -1, 1, 2 do piece("BoarTusk", {0.22, 0.7, 0.3}, {side * 0.55, 0.5, -2.95}, cream, "wedge", {0, 0, side * -20}) end
+		end
 		if deer then
 			for side = -1, 1, 2 do
 				piece("AntlerBeam", {0.16, 1.5, 0.18}, {side * 0.55, 2.6, -1.62}, {172, 148, 106}, "block", {-15, 0, side * -15})
@@ -198,8 +243,9 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 				for index = 1, 7 do
 					local z = (index - 1) % 4 * 0.65 - 0.95
 					local y = if index <= 4 then 0.25 else -0.2
-					coatMark("Rosette", side, y, z, dark)
-					coatMark("RosetteCenter", side, y, z, fur, true)
+					local stripes = species.pattern == "stripes"
+					coatMark(if stripes then "TigerStripe" else "Rosette", side, y, z, dark, false, stripes)
+					if not stripes then coatMark("RosetteCenter", side, y, z, fur, true) end
 				end
 			end
 		end

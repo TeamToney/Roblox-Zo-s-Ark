@@ -4,8 +4,9 @@
 export type Rect = {number}
 export type Door = {side: string, center: number, width: number}
 export type Room = {id: string, name: string, rect: Rect?, polygon: {{number}}?, kind: string, doors: {Door}, height: number?}
-export type Zone = {id: string, name: string, habitat: string, rect: Rect, count: number, extension: boolean?}
+export type Zone = {id: string, name: string, habitat: string, rect: Rect, count: number, extension: boolean?, obscure: boolean?, event: boolean?}
 local Layout = {}
+Layout.Id = "ark"
 Layout.Name = "Zo Sanctuary / Map 1"
 Layout.Source = {name = "MAP 1.jpeg", width = 1530, height = 1632, pivotX = 765, pivotY = 835, scale = 0.6}
 Layout.Bounds = {55, 60, 1490, 1610} :: Rect
@@ -56,6 +57,7 @@ Layout.Rooms = {
 	room("eastLab3", "Marine Supplies", {1019, 417, 1106, 459}, "room", {door("west", 438, 24)}),
 	room("eastLab4", "Dive Prep", {1052, 466, 1106, 546}, "room", {door("south", 1079, 24)}),
 	room("marineHall", "Tidewater Hall", {1115, 198, 1384, 568}, "marine", {door("west", 393, 46), door("east", 387, 56)}),
+	room("reefAlcove", "Coral Alcove", {1290, 218, 1370, 316}, "marine", {door("west", 295, 24)}),
 	room("serviceNorth", "Expedition Lockers", {693, 496, 788, 566}, "room", {door("south", 741, 30)}),
 	room("serviceEast", "Ranger Dispatch", {843, 496, 932, 566}, "room", {door("south", 887, 30)}),
 	room("atriumWest1", "West Expedition Room", {558, 578, 664, 692}, "room", {door("east", 636, 32)}),
@@ -121,10 +123,16 @@ Layout.Zones = {
 	{id = "reefPool", name = "Sunlit Reef Pool", habitat = "reef", rect = {1154, 237, 1358, 360}, count = 5},
 	{id = "oceanPool", name = "Bluewater Pool", habitat = "ocean", rect = {1154, 422, 1358, 490}, count = 3},
 	{id = "openSea", name = "Open Sea", habitat = "ocean", rect = {1550, 240, 1830, 600}, count = 3, extension = true},
+	{id = "arkBurrow", name = "Old Field Room", habitat = "meadow", rect = {196, 1358, 278, 1432}, count = 2, obscure = true},
+	{id = "arkCanopySecret", name = "East Ranger Post", habitat = "jungle", rect = {1350, 1358, 1428, 1432}, count = 2, obscure = true},
+	{id = "arkSummitSecret", name = "Ranger Archives", habitat = "summit", rect = {905, 82, 1018, 140}, count = 2, obscure = true},
+	{id = "arkReefSecret", name = "Coral Alcove", habitat = "reef", rect = {1303, 231, 1357, 302}, count = 2, obscure = true, event = true},
 } :: {Zone}
 Layout.Boats = {{1180, 507}, {1215, 507}, {1250, 507}}
 Layout.Dock = {1140, 534, 1280, 542} :: Rect
 Layout.DockRamp = {1140, 542, 1280, 552} :: Rect
 Layout.SwimSteps = {1140, 523, 1280, 534} :: Rect
 Layout.SeaGate = {1430, 387}
+Layout.Checkpoints = {{id = "ark", x = 814, y = 674}}
+Layout.Chests = {{id = "arkNursery", x = 200, y = 180}, {id = "arkCellar", x = 240, y = 1380}, {id = "arkArchive", x = 960, y = 110}, {id = "arkReef", x = 1340, y = 260, marine = true}}
 return table.freeze(Layout)

@@ -2,6 +2,7 @@
 local Layout = require("../src/shared/MapLayout")
 local Geometry = require("../src/shared/MapGeometry")
 local Config = require("../src/shared/Config")
+local Islands = require("../src/shared/IslandLayouts")
 local function encode(value: any): string
 	local kind = type(value)
 	if kind == "string" then
@@ -26,4 +27,10 @@ local walls = {}
 for _, room in Layout.Rooms do
 	for _, segment in Geometry.walls(room) do table.insert(walls, segment) end
 end
-print(encode({layout = Layout, walls = walls, floorTiles = Geometry.floorTiles(Layout), travelRadius = Config.MaxWorldRadius}))
+local islands = {}
+for _, plan in Islands.Islands do
+	local segments = {}
+	for _, room in plan.Rooms do for _, line in Geometry.walls(room) do table.insert(segments, line) end end
+	table.insert(islands, {layout = plan, walls = segments, floorTiles = Geometry.floorTiles(plan)})
+end
+print(encode({layout = Layout, walls = walls, floorTiles = Geometry.floorTiles(Layout), islands = islands, travelRadius = Config.MaxWorldRadius, seaBounds = Config.SeaBounds}))

@@ -3,7 +3,7 @@
 export type Segment = {number}
 local Geometry = {}
 function Geometry.world(source: any, x: number, y: number): (number, number)
-	return (x - source.pivotX) * source.scale, (y - source.pivotY) * source.scale
+	return (x - source.pivotX) * source.scale + (source.offsetX or 0), (y - source.pivotY) * source.scale + (source.offsetZ or 0)
 end
 function Geometry.contains(rect: {number}, x: number, y: number, inset: number?): boolean
 	local margin = inset or 0
@@ -46,12 +46,21 @@ function Geometry.walls(room: any): {Segment}
 end
 function Geometry.inWater(layout: any, x: number, y: number): boolean
 	if not Geometry.contains(layout.Bounds, x, y) then return true end
+	if layout.LandRects then
+		local land = false
+		for _, rect in layout.LandRects do if Geometry.contains(rect, x, y) then land = true; break end end
+		if not land then return true end
+	end
 	for _, rect in layout.WaterCuts do if Geometry.contains(rect, x, y) then return true end end
 	return false
 end
 function Geometry.floorTiles(layout: any): {{number}}
 	local b = layout.Bounds
 	local xs, ys = {b[1], b[3]}, {b[2], b[4]}
+	for _, rect in layout.LandRects or {} do
+		for _, x in {rect[1], rect[3]} do if x > b[1] and x < b[3] then table.insert(xs, x) end end
+		for _, y in {rect[2], rect[4]} do if y > b[2] and y < b[4] then table.insert(ys, y) end end
+	end
 	for _, cut in layout.WaterCuts do
 		for _, x in {cut[1], cut[3]} do if x > b[1] and x < b[3] then table.insert(xs, x) end end
 		for _, y in {cut[2], cut[4]} do if y > b[2] and y < b[4] then table.insert(ys, y) end end

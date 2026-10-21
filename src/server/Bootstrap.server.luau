@@ -9,6 +9,7 @@ local Rules = require(Shared.Rules).new(Catalog, Config)
 local World = require(script.Parent.World)
 local Wildlife = require(script.Parent.Wildlife)
 local WaterSafety = require(script.Parent.WaterSafety)
+local ExpeditionWorld = require(script.Parent.ExpeditionWorld)
 local Store = require(script.Parent.ProfileStore).new(Rules, Config, {
 	openStore = function(name) return game:GetService("DataStoreService"):GetDataStore(name) end,
 	temporary = RunService:IsStudio() and workspace:GetAttribute("ZoUseLiveDataInStudio") ~= true,
@@ -42,7 +43,12 @@ local function snapshot(player)
 	local session = sessions[player]
 	if not session or session.closed or session.lost then return nil end
 	Rules.refresh(session.data, os.time())
-	return {profile = session.data, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
+	local expeditions = {}
+	for _, id in Catalog.ExpeditionOrder do
+		local value, goal = Rules.expeditionProgress(session.data, id)
+		expeditions[id] = {value = value, goal = goal, claimed = session.data.exploration.claimed[id] == true}
+	end
+	return {profile = session.data, expeditions = expeditions, capacity = Rules.capacity(session.data), tier = Rules.tier(session.data), level = Rules.level(session.data.points), atShop = atShop(player), event = Rules.eventWindow(os.time(), preview), temporary = session.temporary, safety = if waterSafety then waterSafety:snapshot(player) else nil, serverTime = os.time()}
 end
 
 local function push(player, message, kind)
@@ -67,6 +73,11 @@ end, function(player, mode, distance, elapsed)
 		local points = awards * (if swimming then Config.SwimBonusPoints else Config.WalkBonusPoints)
 		push(player, (if swimming then "Swimming" else "Walking") .. " bonus! +" .. coins .. " coins • +" .. points .. " Ark Points", "success")
 	end
+end, push)
+
+ExpeditionWorld.build(world, Catalog, Rules, function(player)
+	local session = sessions[player]
+	return if session and not session.closed and not session.lost and not closing then session.data else nil
 end, push)
 
 local function allow(player)
@@ -114,7 +125,7 @@ local function capture(player, animal)
 		push(player, "Move through the habitat entrance for a clear view of the animal.", "info")
 		return false
 	end
-	local captured, message = Rules.attempt(session.data, animal.id, Random.new():NextNumber(), os.time(), preview)
+	local captured, message = Rules.attempt(session.data, animal.id, Random.new():NextNumber(), os.time(), preview, animal.zone.mapId)
 	push(player, message, if captured then "success" else "info")
 	return captured
 end
@@ -134,6 +145,7 @@ local function join(player)
 	if not session then player:Kick(reason); return end
 	if player.Parent ~= Players or closing then Store:save(session, true); return end
 	sessions[player] = session
+	player.RespawnLocation = world.checkpoints[session.data.exploration.activeCheckpoint] or world.spawnLocation
 	local stats = Instance.new("Folder"); stats.Name = "leaderstats"; stats.Parent = player
 	local points = Instance.new("IntValue"); points.Name = "Ark Points"; points.Value = session.data.points; points.Parent = stats
 	local function characterAdded(character)
@@ -142,7 +154,8 @@ local function join(player)
 		if not root or player.Character ~= character or player.Parent ~= Players then return end
 		-- Initial characters may exist before the procedural spawn is created.
 		-- Move them to the authored entrance and discard the teleport for travel.
-		character:PivotTo(world.spawn * CFrame.new(0, 2, 0))
+		local checkpoint = world.checkpoints[session.data.exploration.activeCheckpoint]
+		character:PivotTo(if checkpoint then checkpoint.CFrame * CFrame.new(0, 4, 0) else world.spawn * CFrame.new(0, 2, 0))
 		positions[player] = nil
 		push(player)
 	end

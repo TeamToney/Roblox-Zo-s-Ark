@@ -5,6 +5,7 @@ build/
 *.rbxm
 *.rbxmx
 !downloads/ZosArk-Map1.rbxl
+!downloads/ZosArk-ThreeIslands.rbxl
 __pycache__/
 *.pyc
 *.log

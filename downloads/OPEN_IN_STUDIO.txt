@@ -1,16 +1,22 @@
 ZO'S ARK - OPEN THIS GAME IN ROBLOX STUDIO
 
-1. Save ZosArk-Map1.rbxl onto your Windows PC using Download raw file on GitHub.
+1. Save ZosArk-ThreeIslands.rbxl onto your Windows PC using Download raw file on GitHub.
 2. In Studio, stop the current test with the red Stop button.
 3. In Studio press Ctrl+O (File > Open from File).
-4. Select ZosArk-Map1.rbxl from your Downloads folder (or wherever you saved it).
+4. Select ZosArk-ThreeIslands.rbxl from your Downloads folder (or wherever you saved it).
 5. Press F5 / Play.
 
 The edit-mode scene can look empty because the world is built when Play starts.
 The game should show the ZO'S ARK interface and the southern entrance.
 A grassland scene with Roblox's WELCOME sign is the starter place, not this game.
 
-WATER SURVIVAL UPDATE
+THREE-ISLAND EXPEDITION UPDATE
+The chart now shows Canopy Reach northeast and Moonstone Isle southeast.
+There are 26 animal species, 7 checkpoint respawns and 12 daily surprise chests.
+Chests are free but may remove points or kill your character. Checkpoints help!
+Hold Rescue for 0.25 seconds. Search secluded rooms/coves for Rare+ wildlife.
+
+WATER SURVIVAL
 Look for the SWIM ENDURANCE / HP bar and step/stroke counters above navigation.
 Swimming starts with 30 seconds of endurance. Visit the store for water gear.
 Orange life rings and green first-aid floats help you stay in the water longer.

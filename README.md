@@ -2,15 +2,17 @@
 
 Explore an Ark sanctuary campus, outdoor habitats and the surrounding sea. Collect wildlife with nonlethal rescue gear and grow a field journal. Return to the Ark Atrium to trade animals into the sanctuary, buy equipment, and prepare for rarer encounters.
 
-This first playable uses an approximate reconstruction of the uploaded **MAP 1.jpeg**, combining its building layout with outdoor biomes and open-sea exploration. It includes fourteen animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily challenges, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use procedural placeholder art. Player-to-player trading and Robux purchases are not implemented.
+This playable prototype adapts all **three uploaded floor plans** into the Ark Sanctuary, Canopy Reach and Moonstone Isle, combining their building layouts with outdoor biomes and open-sea exploration. It includes 26 animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily and island challenges, checkpoint respawns, surprise chests, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use original procedural art. Player-to-player trading and Robux purchases are not implemented.
 
 The water-survival update adds solid island foundations down to the seabed, four marked shore stairways, swim endurance, recovery pickups, and bonuses for walking and swimming. Animals now have species-specific silhouettes, coat patterns, shells, fins and feathers, with animated limbs, wings and tails made from original Roblox primitives.
 
 See the [colored layout diagram](docs/map-1-layout.svg) and [Map 1 design notes](docs/MAP1_DESIGN.md). The map preserves the southern entrance, lower gallery corridor, pointed central atrium, flanking rooms and large eastern hall; smaller partitions are simplified. The scale is chosen for play, not recovered from the scan's measurements.
 
+The [three-island overview](docs/archipelago-layout.svg) and [island design notes](docs/ISLANDS_DESIGN.md) explain the two additional traces. Canopy Reach is northeast of the Ark; Moonstone Isle is southeast. Each new island has three checkpoints, four surprise chests, wildlife and an expedition challenge. Seven boats serve the archipelago. The main campus remains in its original position and orientation.
+
 ## Open and play
 
-**Windows download:** open [ZosArk-Map1.rbxl](downloads/ZosArk-Map1.rbxl) on GitHub and use **Download raw file**. This ready-to-open place is a snapshot of the source in this branch; no build tools are needed to try it. Stop any current Studio playtest, use **File → Open from File** (or **Ctrl+O**), select the downloaded file, and press **F5**. The map appears when Play starts. See [the opening instructions](downloads/OPEN_IN_STUDIO.txt).
+**Windows download:** open [ZosArk-ThreeIslands.rbxl](downloads/ZosArk-ThreeIslands.rbxl) on GitHub and use **Download raw file**. This ready-to-open place is a snapshot of the source in this branch; no build tools are needed to try it. Stop any current Studio playtest, use **File → Open from File** (or **Ctrl+O**), select the downloaded file, and press **F5**. The map appears when Play starts. See [the opening instructions](downloads/OPEN_IN_STUDIO.txt). The earlier Map 1 download path remains an alias for the current game.
 
 For development builds:
 
@@ -22,6 +24,14 @@ For development builds:
 6. Visit Tidewater Hall in the northeast. Descend its southern boarding steps, borrow a boat, and use normal movement controls to steer; jump to leave. Sail through the eastern sea gate to find more marine wildlife. Each boat seats three players including the pilot.
 
 Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B** store, **C** challenges, **M** chart, **H** guide. Boats are free and return to their dock after 45 seconds without occupants. Gear upgrades apply automatically, including the nonlethal tranquilizer upgrade; there is no aiming or weapon combat system yet.
+
+### Island expeditions and surprise chests
+
+- Hold **Rescue animal** for **0.25 seconds**; the server capture cooldown is **0.8 seconds**. Common/Uncommon land animals can follow navigable doorways between rooms on their home island. Failed paths stop movement; wildlife never teleports through walls.
+- **Rare, Epic, Legendary and Mythic wildlife** spawn only in secluded habitats. Look in remote rooms, coral alcoves and coves. These habitat locations are omitted from chart markers. Aurora Mantas appear in Tidewater Hall's secluded coral alcove. Rare wildlife stays in its hidden home habitat.
+- Activate any of the **7 checkpoints** to set your respawn; the first activation awards **15 coins + 10 points**. The active checkpoint persists with the journal. Both new islands have a landing checkpoint, an interior checkpoint and a hidden checkpoint. Check **Challenges** for four one-time expedition prizes.
+- The **12 surprise chests** are free, with one opening per explorer per chest per UTC day. Defaults: **35% coins**, **30% an animal**, **20% equipment**, **10% a point-loss trap**, **5% a death trap**. Only obscure chests can reveal Rare+ animals; event mantas are excluded. Equipment is permanent and automatically active. An animal prize with a full pack converts to its coin value and discovery points.
+- Point traps remove 12% of current Ark Points, at least 10 when available, clamped at zero. Death traps kill the character and respawn at the selected checkpoint; existing gear, animals and discoveries remain. Reopening the same chest that day cannot reroll the result. New openings become available at midnight UTC.
 
 ### Swimming and movement bonuses
 
@@ -42,7 +52,7 @@ bash scripts/check.sh
 
 The bootstrap downloads pinned Rojo 7.7.1 and Luau 0.742 archives, verifies the published upstream SHA-256 checksums in `tools.json`, and extracts only the named executables into ignored `.tools/`. Checks run strict analysis, deterministic game/map/save-adapter tests, structural map reachability and boat-route checks, compilation of every game script, and a Rojo build. They also regenerate `docs/map-1-layout.svg` from the same layout data used by the game. The resulting place is `build/ZosArk.rbxlx`. CI performs the same checks and retains a place artifact.
 
-To refresh the checked-in Studio download after validating source changes, run `.tools/bin/rojo build default.project.json --output downloads/ZosArk-Map1.rbxl` and commit the updated place with its source.
+To refresh the checked-in Studio downloads after validating source changes, run `python3 scripts/package_studio.py` and commit both updated places with their source. Packaging rebuilds the binary/XML places, refreshes the legacy download alias and verifies the ZIP archive. CI runs this after the checks.
 
 CLI checks do not run the Roblox engine. [Studio checks](docs/TESTING.md) cover character movement, prompts, seats, visual layout, replication, live DataStore integration, and performance. This Linux cloud session cannot open or connect to a local Studio.
 
@@ -73,13 +83,17 @@ Open the place, connect the Rojo plugin to the local server, and sync the source
 | `src/shared/Config.luau` | Economy constants, limits, event cadence, save settings |
 | `src/shared/Rules.luau` | Testable progression, purchases, trades, rewards |
 | `src/shared/MapLayout.luau` | Hand-traced Map 1 rooms, paths, habitats, dock, sea gate |
+| `src/shared/IslandLayouts.luau` | Both additional floor-plan traces, island positions, checkpoints and chests |
 | `src/shared/MapGeometry.luau` | Coordinate conversion, door gaps, foundation cutouts, floor outlines |
 | `src/shared/SwimRules.luau` | Equipment endurance, fatigue, flotation and recovery rules |
-| `src/shared/AnimalShapes.luau` | Pure geometry blueprints for all fourteen animal species |
+| `src/shared/AnimalShapes.luau` | Pure geometry blueprints for all 26 animal species |
+| `src/shared/WildlifeRules.luau` | Hidden-rarity spawn policy and room-visit eligibility |
 | `src/server/Bootstrap.server.luau` | Server authority, remotes, capture/travel validation |
 | `src/server/ProfileStore.luau` | Profile ownership, safe loading and saving |
 | `src/server/World.luau` | Map selection, collision-aware spawning, boats |
 | `src/server/PlanWorld.luau` | Map 1 campus, open-air habitats, marine pools, boarding steps |
+| `src/server/IslandWorld.luau` | Additional islands, solid foundations, landing piers and room geometry |
+| `src/server/ExpeditionWorld.luau` | Validated checkpoint/chest prompts, respawns and chest effects |
 | `src/server/Wildlife.luau` | Species spawning, simple models, roaming, capture prompts |
 | `src/server/WaterSafety.luau` | Server water checks, exhaustion, shared recovery pickups and movement sampling |
 | `src/server/AnimalModels.luau` | Roblox model construction and limb/fin/wing animation |
