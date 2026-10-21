@@ -1,6 +1,7 @@
 --!nonstrict
 local Players = game:GetService("Players")
 local EncounterRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EncounterRules)
+local EscapeRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EscapeRules)
 local RunService = game:GetService("RunService")
 local World = require(script.Parent.World)
 local AnimalModels = require(script.Parent.AnimalModels)
@@ -35,7 +36,7 @@ function Wildlife:spawn(zone, id)
 	prompt.MaxActivationDistance = 12; prompt.HoldDuration = EncounterRules.holdTime(self.world.config.CaptureHold,self.catalog.Rarities[species.rarity].rank)
 	prompt.RequiresLineOfSight = true; prompt.Parent = root
 	model:SetAttribute("SpeciesId", id); model.Parent = self.world.actors
-	local record = {holds = {}, retryUntil = 0, prompt = prompt, fleeUntil = 0, fleeStarted = 0, restUntil = 0, snaredUntil = 0, flightHeight = 0, model = model, root = root, rig = rig, zone = zone, id = id, alive = true, busy = false, position = root.Position, path = {}, waypoint = 1, nextMove = os.clock() + self.random:NextNumber(3, 7), yaw = self.random:NextNumber(0, math.pi * 2)}
+	local record = {behavior=EscapeRules.behavior(self.catalog,id,zone.marine), routeVersion=0, nextEscapePlan=0, holds = {}, retryUntil = 0, prompt = prompt, fleeUntil = 0, fleeStarted = 0, restUntil = 0, snaredUntil = 0, flightHeight = 0, model = model, root = root, rig = rig, zone = zone, id = id, alive = true, busy = false, position = root.Position, path = {}, waypoint = 1, nextMove = os.clock() + self.random:NextNumber(3, 7), yaw = self.random:NextNumber(0, math.pi * 2)}
 	self.records[model] = record
 	prompt.PromptButtonHoldBegan:Connect(function(player)
 		local c=player.Character; local body=c and c:FindFirstChild("HumanoidRootPart"); local h=c and c:FindFirstChildOfClass("Humanoid")
@@ -57,7 +58,7 @@ function Wildlife:spawn(zone, id)
 		elseif escaped and player.Character then
 			record.retryUntil=os.clock()+self.world.config.CaptureCooldown
 			local body = player.Character:FindFirstChild("HumanoidRootPart")
-			if body then self:flee(record, body.Position) end
+			if body then self:flee(record, body.Position, player) end
 		end
 	end)
 end
@@ -73,10 +74,11 @@ function Wildlife:planMove(record)
 		if #candidates > 0 then
 			local target = candidates[self.random:NextInteger(1, #candidates)]
 			record.pending = true; self.routing += 1
+			local version=record.routeVersion
 			task.spawn(function()
 				local ok, points = pcall(World.route, self.world, record.position, target.position + Vector3.new(0, species.scale * 1.7, 0), species.scale)
 				self.routing -= 1; record.pending = false
-				if ok and points and record.alive and os.clock() >= record.fleeUntil and os.clock() >= record.snaredUntil then record.path = points; record.waypoint = 2 end
+				if ok and points and record.alive and record.routeVersion==version and os.clock() >= record.fleeUntil and os.clock() >= record.snaredUntil then record.path = points; record.waypoint = 2 end
 			end)
 			return
 		end
@@ -92,25 +94,65 @@ function Wildlife:planMove(record)
 	end
 end
 
-function Wildlife:flee(record, threat)
-	local behavior = self.catalog.Escape[record.id]
-	local now = os.clock()
-	if not behavior or now < record.snaredUntil then return end
-	-- Back off even when a corner leaves no valid escape destination.
-	record.restUntil = now + 2
-	local species = self.catalog.Species[record.id]
-	local best, score = nil, (record.position - threat).Magnitude
-	-- Ground-checked home-habitat samples keep hidden species secluded.
-	for _ = 1, 16 do
-		local point = World.sample(self.world, record.zone, self.random, species.scale)
-		if point then
-			point += Vector3.new(0, species.scale * 1.7, 0)
-			local separation = (point - threat).Magnitude
-			if separation > score and (point-record.position).Magnitude < 65 and World.canRoam(self.world,record.position,point,species.scale) then best,score=point,separation end
+function Wildlife:escapePoint(record, threat)
+	local species=self.catalog.Species[record.id]
+	local scale=species.scale
+	local params=World.wildlifeParams(self.world)
+	local restricted=record.zone.marine or record.zone.obscure or self.catalog.Rarities[species.rarity].rank>=3
+	local function within(point)
+		if not restricted then return true end
+		local bounds=record.zone.bounds; local margin=math.max(1,scale*2)
+		if bounds then return point.X>=bounds.minX+margin and point.X<=bounds.maxX-margin and point.Z>=bounds.minZ+margin and point.Z<=bounds.maxZ-margin end
+		return Vector2.new(point.X-record.zone.center.X,point.Z-record.zone.center.Z).Magnitude<=record.zone.radius-margin
+	end
+	local chosen=EscapeRules.choose(EscapeRules.probes(record.position.X,record.position.Z,threat.X,threat.Z,record.yaw),function(probe)
+		local point=Vector3.new(probe.x,record.position.Y,probe.z)
+		if not within(point) or not World.canRoam(self.world,record.position,point,scale) then return false end
+		-- Sweep across dry ground / real water as well as walls. Characters are
+		-- excluded so standing on the animal cannot pin its navigation in place.
+		local samples=math.max(2,math.ceil(probe.distance/3))
+		for i=1,samples do
+			local sample=record.position:Lerp(point,i/samples)
+			if record.zone.marine then
+				if not World.inWater(sample) then return false end
+			else
+				local hit=workspace:Raycast(sample+Vector3.new(0,3,0),Vector3.new(0,-scale*1.7-6,0),params)
+				if not hit or hit.Normal.Y<0.8 or math.abs(hit.Position.Y-(record.position.Y-scale*1.7))>1.5 then return false end
+			end
+		end
+		return true
+	end)
+	return if chosen then Vector3.new(chosen.x,record.position.Y,chosen.z) else nil
+end
+
+function Wildlife:planEscape(record, threat)
+	record.nextEscapePlan=os.clock()+0.45
+	local point=self:escapePoint(record,threat)
+	if point then record.path={point}; record.waypoint=1; return true end
+	-- A blocked doorway can need a turn before the animal gets farther away.
+	-- Reuse the bounded path budget rather than teleporting through the wall.
+	if not record.zone.marine and not record.pending and self.routing<2 then
+		local species=self.catalog.Species[record.id]
+		local target=World.sample(self.world,record.zone,self.random,species.scale)
+		if target then
+			record.pending=true; self.routing+=1; local version=record.routeVersion
+			task.spawn(function()
+				local ok,points=pcall(World.route,self.world,record.position,target+Vector3.new(0,species.scale*1.7,0),species.scale)
+				self.routing-=1; record.pending=false
+				if ok and points and record.alive and record.routeVersion==version and os.clock()<record.fleeUntil and os.clock()>=record.snaredUntil then record.path=points; record.waypoint=2 end
+			end)
 		end
 	end
-	if not best then return end
-	record.path={best}; record.waypoint=1; record.fleeStarted=now; record.fleeUntil=now+3.5; record.restUntil=now+14
+	return false
+end
+
+function Wildlife:flee(record, threat, player)
+	local now=os.clock()
+	if now<record.snaredUntil then return false end
+	record.routeVersion+=1; record.holds={}; record.threat=threat; record.pursuer=player
+	record.path={}; record.waypoint=1
+	record.fleeStarted=now; record.fleeUntil=now+4; record.restUntil=now+14
+	return self:planEscape(record,threat)
 end
 
 function Wildlife:start()
@@ -142,18 +184,22 @@ function Wildlife:start()
 		local now = os.clock()
 		for model, record in self.records do
 			local species = self.catalog.Species[record.id]
-			local behavior = self.catalog.Escape[record.id]
-			if behavior and now >= record.restUntil and now >= record.snaredUntil then
+			local behavior = record.behavior
+			if behavior.alert>0 and now >= record.restUntil and now >= record.snaredUntil then
 				for _, player in Players:GetPlayers() do
 					local char=player.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); local hum=char and char:FindFirstChildOfClass("Humanoid")
 					local owned = self.getOwned(player)
 					if root and hum and hum.Health>0 and owned and EncounterRules.alert(behavior,(root.Position-record.position).Magnitude,owned.camoCoat==true,now,record.restUntil,record.snaredUntil) then
 						local params=RaycastParams.new(); params.FilterType=Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances={char,self.world.actors,self.world.boats}; params.IgnoreWater=true
-						if not workspace:Raycast(record.root.Position,root.Position-record.root.Position,params) then self:flee(record,root.Position); break end
+						if not workspace:Raycast(record.root.Position,root.Position-record.root.Position,params) then self:flee(record,root.Position,player); break end
 					end
 				end
 			end
 			local condition=EncounterRules.condition(now,record.fleeUntil,record.snaredUntil)
+			if condition=="fleeing" and record.waypoint>#record.path and not record.pending and now>=record.nextEscapePlan then
+				local c=record.pursuer and record.pursuer.Character; local root=c and c:FindFirstChild("HumanoidRootPart")
+				self:planEscape(record,if root then root.Position else record.threat)
+			end
 			if condition=="calm" and now >= record.nextMove and not record.pending and record.waypoint > #record.path then
 				self:planMove(record); record.nextMove = now + self.random:NextNumber(8, 16)
 			end

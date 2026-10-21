@@ -1,4 +1,6 @@
 --!nonstrict
+local ChestCutscene = require(script.Parent.ChestCutscene)
+local GuiService = game:GetService("GuiService")
 local CurrencyHUD = require(script.Parent.CurrencyHUD)
 local TravelView = require(script.Parent.TravelView)
 local ShopView = require(script.Parent.ShopView)
@@ -15,6 +17,9 @@ local Config = require(Shared.Config)
 local Layout = require(Shared.MapLayout)
 local Islands = require(Shared.IslandLayouts)
 local Geometry = require(Shared.MapGeometry)
+local notebook = require(Shared.NotebookState).new()
+local state, currentPage, pendingTrade, requestBusy = nil, "guide", nil, false
+local render, send, open, closeNotebook
 
 local palette = {}
 for key, color in require(Shared.Colors) do palette[key]=Color3.fromRGB(unpack(color)) end
@@ -58,7 +63,7 @@ local function clock(seconds)
 end
 
 local gui = make("ScreenGui", {Name = "ZosArk", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, player:WaitForChild("PlayerGui"))
-local header = make("Frame", {BackgroundColor3 = palette.ink, BackgroundTransparency = 0.04, BorderSizePixel = 0, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 58)}, gui)
+local header = make("Frame", {ZIndex=40, Active=true,BackgroundColor3 = palette.ink, BackgroundTransparency = 0.04, BorderSizePixel = 0, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 58)}, gui)
 corner(header)
 local brand = text(header, "ZO'S ARK", 23, palette.cream, UDim2.fromOffset(16, 5), UDim2.fromOffset(200, 29), true)
 local subtitle = text(header, "EXPLORE  /  RESCUE  /  RESTORE", 10, palette.mint, UDim2.fromOffset(16, 32), UDim2.fromOffset(240, 18), true)
@@ -68,21 +73,23 @@ local tide = make("Frame", {BackgroundColor3 = palette.card, BackgroundTranspare
 corner(tide, 9)
 local tideText = text(tide, "A whole world of wildlife is waiting.", 12, palette.mint, UDim2.fromOffset(12, 0), UDim2.new(1, -24, 1, 0), true)
 
-local panel = make("Frame", {Name = "Notebook", BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 122), Size = UDim2.fromOffset(690, 480)}, gui)
+local backdrop = make("TextButton", {Name="NotebookBackdrop",Text="",AutoButtonColor=false,Selectable=false,Active=true,BackgroundColor3=Color3.fromRGB(3,12,24),BackgroundTransparency=0.45,BorderSizePixel=0,Size=UDim2.fromScale(1,1),ZIndex=20}, gui)
+backdrop.Activated:Connect(function() if closeNotebook then closeNotebook() end end)
+local panel = make("Frame", {Name = "Notebook", Active=true, ZIndex=30, BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 122), Size = UDim2.fromOffset(690, 480)}, gui)
 corner(panel, 16)
 local title = text(panel, "Welcome aboard", 23, palette.cream, UDim2.fromOffset(18, 9), UDim2.new(1, -76, 0, 31), true)
 local description = text(panel, "Preparing your expedition…", 12, palette.muted, UDim2.fromOffset(18, 39), UDim2.new(1, -36, 0, 35))
-local close = button(panel, "×", UDim2.new(1, -49, 0, 12), UDim2.fromOffset(34, 32), function() panel.Visible = false end, true)
-close.TextSize = 24
+local close = button(panel, "×", UDim2.new(1, -49, 0, 12), UDim2.fromOffset(34, 32), function() if closeNotebook then closeNotebook() end end, true)
+close.TextSize = 24; close.ZIndex=10; close.Modal=true
 local scroll = make("ScrollingFrame", {
-	BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(14, 82),
+	ClipsDescendants=true, Active=true, ZIndex=2, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(14, 82),
 	Size = UDim2.new(1, -28, 1, -96), ScrollBarThickness = 4, ScrollBarImageColor3 = palette.mint,
 	CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
 }, panel)
 make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, scroll)
 make("UIPadding", {PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8)}, scroll)
 
-local nav = make("Frame", {BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.fromOffset(650, 48)}, gui)
+local nav = make("Frame", {ZIndex=31,Active=true,BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.fromOffset(650, 48)}, gui)
 corner(nav, 14)
 local tabs = {{"journal", "Journal"}, {"store", "Store"}, {"challenges", "Quests"}, {"map", "Chart"}, {"travel", "Travel"}, {"kit", "Field Kit"}, {"guide", "Guide"}}
 local navButtons = {}
@@ -95,10 +102,10 @@ local enduranceFill = make("Frame", {BackgroundColor3 = palette.mint, BorderSize
 local location = text(gui, "", 12, palette.cream, UDim2.new(0.5, -220, 1, -88), UDim2.fromOffset(440, 20), true)
 location.TextXAlignment = Enum.TextXAlignment.Center
 location.TextStrokeTransparency = 0.4
-local toast = make("Frame", {Visible = false, BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -166), Size = UDim2.fromOffset(580, 56), ZIndex = 10}, gui)
+local toast = make("Frame", {Visible = false, BackgroundColor3 = palette.ink, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -166), Size = UDim2.fromOffset(580, 56), ZIndex = 50}, gui)
 corner(toast, 12)
 local toastText = text(toast, "", 14, palette.cream, UDim2.fromOffset(14, 0), UDim2.new(1, -28, 1, 0), true)
-toastText.ZIndex = 11
+toastText.ZIndex = 2
 local toastSerial = 0
 local function notify(message, success)
 	if not message then return end
@@ -108,8 +115,6 @@ local function notify(message, success)
 	task.delay(5, function() if toastSerial == serial then toast.Visible = false end end)
 end
 
-local state, currentPage, pendingTrade, requestBusy = nil, "guide", nil, false
-local render, send, open
 local markers = {}
 local function card(height)
 	local frame = make("Frame", {BackgroundColor3 = palette.card, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, height)}, scroll)
@@ -322,6 +327,7 @@ render = function()
 	-- and the separate player dot, rather than rebuilding hundreds of lines.
 	local visited = 0; for _ in state.profile.exploration.checkpoints do visited += 1 end
 	if currentPage == "map" and markers.player and markers.player.Parent and markers.signature == mapSignature(visited) then return end
+	if GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(scroll) then GuiService.SelectedObject=nil end
 	for _, child in scroll:GetChildren() do if child:IsA("GuiObject") then child:Destroy() end end
 	markers = {}
 	if currentPage == "journal" then journal()
@@ -334,14 +340,22 @@ render = function()
 	scroll.CanvasPosition = oldPosition
 end
 
+closeNotebook = function()
+	notebook.close(os.clock()); panel.Visible=false; backdrop.Visible=false
+	pendingTrade=nil; ShopView.selected=nil; ShopView.category="All"
+	if GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(panel) then GuiService.SelectedObject=nil end
+	if render then render() end
+end
 open = function(page)
+	if not notebook.open() then return end
+	backdrop.Visible=true
 	pendingTrade = nil
 	if currentPage ~= page then scroll.CanvasPosition = Vector2.zero end
 	currentPage = page; panel.Visible = true; render()
 end
 for index, tab in tabs do
 	navButtons[tab[1]] = button(nav, tab[2], UDim2.new((index - 1) / #tabs, 5, 0, 5), UDim2.new(1 / #tabs, -10, 1, -10), function()
-		if panel.Visible and currentPage == tab[1] then panel.Visible = false else open(tab[1]) end
+		if panel.Visible and currentPage == tab[1] then closeNotebook() else open(tab[1]) end
 		if tab[1] == "store" and send then send("snapshot") end
 	end, true)
 	navButtons[tab[1]].TextSize = 12
@@ -383,11 +397,15 @@ local boatInput = remotes:WaitForChild("BoatInput")
 send = function(verb, id, amount, currency)
 	if requestBusy then return end
 	requestBusy = true
+	local uiRevision=notebook.state.revision
 	task.spawn(function()
 		local ok, result = pcall(function() return action:InvokeServer({action = verb, id = id, amount = amount, currency = currency}) end)
 		requestBusy = false
 		if not ok then notify("The Ark connection was interrupted. Please try again."); return end
 		if result.state then state = result.state; state.receivedAt = os.clock(); render() end
+		if result.ok and result.selection and notebook.acceptInspection(uiRevision,os.clock()) then
+			ShopView.selected=result.selection; ShopView.category="All"; scroll.CanvasPosition=Vector2.zero; open("store")
+		end
 		if result.message then notify(result.message, result.ok) end
 		if result.ok and result.productId then
 			local prompted=pcall(function() MarketplaceService:PromptProductPurchase(player,result.productId) end)
@@ -395,12 +413,45 @@ send = function(verb, id, amount, currency)
 		end
 	end)
 end
+local cutscene=ChestCutscene.new(player,function(active,data)
+	if active then closeNotebook(); notebook.suspend(os.clock()) else notebook.resume(os.clock()) end
+	gui.Enabled=not active
+	if not active and data then notify(data.message,not data.trap) end
+end)
+local watched=setmetatable({},{__mode="k"})
+local function watchMerchandise(instance)
+	if not instance:IsA("ClickDetector") or watched[instance] then return end
+	local id=instance:GetAttribute("ZoShopItemId")
+	if type(id)~="string" then return end
+	watched[instance]=true
+	instance.MouseClick:Connect(function(who)
+		if who~=player or not notebook.canInspect(os.clock()) or GuiService.MenuIsOpen then return end
+		local point=UserInputService:GetMouseLocation()
+		if UserInputService.MouseEnabled then
+			for _,hit in player.PlayerGui:GetGuiObjectsAtPosition(point.X,point.Y) do
+				if not hit:IsDescendantOf(gui) then continue end
+				local ancestor,visible=hit,true
+				while ancestor and ancestor~=gui do
+					if ancestor:IsA("GuiObject") and not ancestor.Visible then visible=false; break end
+					ancestor=ancestor.Parent
+				end
+				if visible then return end
+			end
+		end
+		send("inspect",id)
+	end)
+end
+for _,instance in workspace:GetDescendants() do watchMerchandise(instance) end
+workspace.DescendantAdded:Connect(function(instance) if instance:IsA("ClickDetector") then task.defer(watchMerchandise,instance) end end)
 remotes:WaitForChild("Effects").OnClientEvent:Connect(function(data)
-	if data.kind=="chest" then ChestEffects.chest(data) elseif data.kind=="scan" then ChestEffects.scan(data) end
+	if data.kind=="chest" then cutscene:play(data) elseif data.kind=="scan" then ChestEffects.scan(data) end
 end)
 remotes:WaitForChild("Changed").OnClientEvent:Connect(function(update)
 	if update.state then state = update.state; state.receivedAt = os.clock() end
-	if update.kind == "merchandise" then ShopView.selected=update.detail; ShopView.category="All"; scroll.CanvasPosition=Vector2.zero; open("store") elseif update.kind=="travel" then open("travel") elseif update.kind == "shop" then ShopView.selected=nil; open("store") elseif update.kind == "challenges" then open("challenges") else render() end
+	if update.kind=="travel" then open("travel")
+	elseif update.kind=="shop" and notebook.canInspect(os.clock()) then ShopView.selected=nil; open("store")
+	elseif update.kind=="challenges" and not notebook.state.suspended then open("challenges")
+	else render() end
 	notify(update.message, update.kind == "success")
 end)
 task.spawn(function()
@@ -414,11 +465,13 @@ end)
 
 local hotkeys = {[Enum.KeyCode.J] = "journal", [Enum.KeyCode.B] = "store", [Enum.KeyCode.C] = "challenges", [Enum.KeyCode.M] = "map", [Enum.KeyCode.H] = "guide", [Enum.KeyCode.K] = "kit", [Enum.KeyCode.T] = "travel"}
 UserInputService.InputBegan:Connect(function(input, processed)
+	if notebook.state.suspended then return end
+	if panel.Visible and (input.KeyCode==Enum.KeyCode.Escape or input.KeyCode==Enum.KeyCode.ButtonB) then closeNotebook(); return end
 	if processed then return end
 	local kitKeys={[Enum.KeyCode.One]="speedBoost",[Enum.KeyCode.Two]="animalTrap",[Enum.KeyCode.Three]="tracker"}
 	if kitKeys[input.KeyCode] then send("use",kitKeys[input.KeyCode]); return end
 	local page = hotkeys[input.KeyCode]
-	if page then if panel.Visible and currentPage == page then panel.Visible = false else open(page) end end
+	if page then if panel.Visible and currentPage == page then closeNotebook() else open(page) end end
 end)
 local elapsed, boatElapsed = 0, 0
 RunService.RenderStepped:Connect(function(dt)
@@ -430,7 +483,7 @@ RunService.RenderStepped:Connect(function(dt)
 		boatElapsed = 0
 		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		local seat = humanoid and humanoid.SeatPart
-		if seat and seat:IsA("VehicleSeat") then boatInput:FireServer(seat.ThrottleFloat, seat.SteerFloat) end
+		if seat and seat:IsA("VehicleSeat") then boatInput:FireServer(if notebook.state.suspended then 0 else seat.ThrottleFloat, if notebook.state.suspended then 0 else seat.SteerFloat) end
 	end
 	elapsed += dt; if elapsed < 0.2 then return end; elapsed = 0
 	if state then

@@ -153,7 +153,7 @@ function Rules.new(catalog: any, config: any)
 		if not chance then return false, reason or "Unable to capture." end
 		api.refresh(p, now)
 		if p.bait > 0 then p.bait -= 1 end
-		if roll >= chance then return false, "Nearly! The animal slipped away. Try again." end
+		if roll >= chance then return false, if condition=="snared" then "The animal resisted! Your snare is still holding it; try again." else "Missed! Follow the animal and try again." end
 		p.inventory[id] = (p.inventory[id] or 0) + 1
 		p.discovered[id] = true
 		p.stats.catches += 1
@@ -318,6 +318,7 @@ function Rules.new(catalog: any, config: any)
 			local coins = 40 + math.floor(choice * 111); p.coins += coins; result.message = "Treasure! Found " .. coins .. " coins."
 		end
 		result.celebration = if result.kill or kind == "pointsTrap" then 0 elseif result.animal then catalog.Rarities[catalog.Species[result.animal].rarity].rank elseif result.equipment then 3 else (if choice > 0.7 then 2 else 1)
+		result.title = if result.animal then catalog.Species[result.animal].name elseif result.equipment then catalog.Items[result.equipment].name elseif result.kill then "A hidden danger!" elseif kind=="pointsTrap" then "Point-loss trap" else "Coin cache"
 		return true, result
 	end
 	function api.claim(p: Profile, id: string, now: number, preview: boolean?): (boolean, string)

@@ -37,14 +37,14 @@ function Storefront.build(world, part, label)
 		p("DisplayShelf",Vector3.new(4.4,0.2,3),center+Vector3.new(0,-1.5,0),wood)
 		local item = Catalog.Items[id]
 		local display=Instance.new("Model"); display.Name="Merchandise_"..id; display.Parent=model
+		world.merchandise=world.merchandise or {}; world.merchandise[id]=display
 		for _, spec in Shapes.build(id,item.kind) do
 			local prop = part(display,"Display_"..id,Vector3.new(unpack(spec.size))*0.55,origin*CFrame.new(center+Vector3.new(unpack(spec.at))*0.55),Color3.fromRGB(unpack(spec.color)),Enum.Material.SmoothPlastic,if spec.shape=="ball" then Enum.PartType.Ball else nil)
 			prop.CanCollide = false; prop.CanQuery = true
 		end
 		local tag = p("PriceTag_"..id,Vector3.new(4.4,1,0.15),center+Vector3.new(0,-1.2,-1.6),navy)
 		tag.Parent=display; display.PrimaryPart=tag
-		local click=Instance.new("ClickDetector"); click.MaxActivationDistance=28; click.Parent=display
-		click.MouseClick:Connect(function(player) if world.onMerchandise then world.onMerchandise(player,id,display) end end)
+		local click=Instance.new("ClickDetector"); click.MaxActivationDistance=28; click:SetAttribute("ZoShopItemId",id); click.Parent=display
 		local gui = Instance.new("SurfaceGui"); gui.Face = Enum.NormalId.Front; gui.CanvasSize = Vector2.new(320,100); gui.Parent = tag
 		local text = Instance.new("TextLabel"); text.Size = UDim2.fromScale(1,1); text.BackgroundTransparency = 1; text.Text = item.name.."\n"..item.price.." coins / "..item.pointsPrice.." pts\nCLICK TO BUY"; text.TextColor3 = cream; text.Font = Enum.Font.GothamBold; text.TextSize = 19; text.TextWrapped = true; text.Parent = gui
 	end

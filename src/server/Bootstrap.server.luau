@@ -105,6 +105,23 @@ local function allow(player)
 	bucket.tokens -= 1; return true
 end
 
+local function inspectMerchandise(player,id)
+	local display=world.merchandise and world.merchandise[id]
+	if not display or not display.Parent then return false end
+	local root=healthyRoot(player)
+	if not atShop(player) or not root or (root.Position-display:GetPivot().Position).Magnitude>30 then return false end
+	local params=RaycastParams.new(); params.FilterType=Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances={player.Character}; params.IgnoreWater=true; params.RespectCanCollide=true
+	local visible=false
+	for _,part in display:GetDescendants() do
+		if part:IsA("BasePart") then
+			local hit=workspace:Raycast(root.Position,part.Position-root.Position,params)
+			if not hit or hit.Instance:IsDescendantOf(display) then visible=true; break end
+		end
+	end
+	if not visible then return false end
+	return true
+end
+
 action.OnServerInvoke = function(player, request)
 	if not allow(player) then return {ok = false, message = "Please wait a moment."} end
 	if closing then return {ok = false, message = "The Ark is saving. Please rejoin shortly."} end
@@ -114,7 +131,10 @@ action.OnServerInvoke = function(player, request)
 	if request.action == "snapshot" then return {ok = true, state = snapshot(player)} end
 	if type(request.id) ~= "string" or #request.id > 64 then return {ok = false, message = "Invalid item."} end
 	local ok, message
-	if request.action == "buy" or request.action == "sell" then
+	if request.action == "inspect" then
+		if not inspectMerchandise(player,request.id) then return {ok=false,message="Move closer to the item for a clear view."} end
+		return {ok=true,selection=request.id,state=snapshot(player)}
+	elseif request.action == "buy" or request.action == "sell" then
 		if not atShop(player) then return {ok = false, message = "Return to Ark Outfitters to buy gear or trade animals.", state = snapshot(player)} end
 		if request.action == "buy" then ok, message = Rules.buy(session.data, request.id, request.currency)
 		else ok, message = Rules.sell(session.data, request.id, request.amount) end
@@ -166,20 +186,6 @@ local function capture(player, animal)
 	return captured, eligible and not captured
 end
 
-world.onMerchandise=function(player,id,display)
-	local root=healthyRoot(player)
-	if not allow(player) or not atShop(player) or not root or (root.Position-display:GetPivot().Position).Magnitude>30 then return end
-	local params=RaycastParams.new(); params.FilterType=Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances={player.Character}; params.IgnoreWater=true; params.RespectCanCollide=true
-	local visible=false
-	for _,part in display:GetDescendants() do
-		if part:IsA("BasePart") then
-			local hit=workspace:Raycast(root.Position,part.Position-root.Position,params)
-			if not hit or hit.Instance:IsDescendantOf(display) then visible=true; break end
-		end
-	end
-	if not visible then return end
-	push(player,"Choose coins or Ark Points to buy this item.","merchandise",id)
-end
 world.shopPrompt.Triggered:Connect(function(player) if atShop(player) then push(player, nil, "shop") end end)
 world.challengePrompt.Triggered:Connect(function(player)
 	local root = healthyRoot(player)

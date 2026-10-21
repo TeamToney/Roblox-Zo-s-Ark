@@ -61,7 +61,7 @@ function ExpeditionWorld.build(world, catalog, rules, getProfile, notify, effect
 			local ok, result = rules.openChest(getProfile(player), spot.id, random:NextNumber(), random:NextNumber(), os.time())
 			notify(player, result.message, if ok and result.kind ~= "pointsTrap" and result.kind ~= "deathTrap" then "success" else "info")
 			if not ok then return end
-			effects:FireClient(player,{kind="chest",position=box.Position,rank=result.celebration,trap=result.kind=="deathTrap" or result.kind=="pointsTrap"})
+			effects:FireClient(player,{kind="chest",position=box.Position,rank=result.celebration,trap=result.kind=="deathTrap" or result.kind=="pointsTrap",animal=result.animal,equipment=result.equipment,title=result.title,message=result.message})
 			if not animating then
 				animating = true; local closed = lid.CFrame
 				TweenService:Create(lid, TweenInfo.new(0.25), {CFrame = closed * CFrame.new(0, 1.1, 0.7) * CFrame.Angles(math.rad(-50), 0, 0)}):Play()

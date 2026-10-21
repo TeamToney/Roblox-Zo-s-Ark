@@ -25,14 +25,17 @@ The chart's four EXIT markers lead to shore stairs. Animal models are updated.
 Studio uses temporary test data by default. Nothing is published by opening it.
 
 OUTFITTERS & WILDLIFE CHASE UPDATE
-Twelve species now run or briefly fly away. Birds land again after a short burst.
+All species run, swim or briefly fly away after a miss; twelve also flee on approach.
+Birds land again after a four-second burst. Gentle snares hold animals still.
 Ark Outfitters is a walk-in storefront with shelves, models and price tags.
 Store shows 3D merchandise previews and coin / Ark Point purchase buttons.
 Field Kit: activate sprint boosts, place gentle snares, scan nearby wildlife,
 or equip your Safari Hat / Aurora Footsteps cosmetic trail.
 Keyboard: K opens Field Kit; 1 sprint, 2 snare, 3 scanner.
 Sprints last 45 seconds; unused charges can be bought or found in chests.
-Chests celebrate prizes with confetti, balloons and increasingly big fireworks.
+Chests open in a fullscreen 3D cutscene with a moving camera and prize reveal.
+Better rewards add balloons and bigger fireworks. Skip: button, Space, Esc or Back.
+Skipping keeps the server-awarded prize. Trap results have a danger reveal.
 Robux bundles say Coming soon until the creator adds Developer Product IDs.
 Setup instructions are in docs/ROBUX_SETUP.md in the source repository.
 
@@ -44,6 +47,7 @@ Once unlocked, sail for free or pay for an optional one-way teleport.
 Teleport fees: Ark 25 coins/15 points; Canopy 65/40; Moonstone 90/60.
 One Teleport Pass can pay for any owned destination. Entry is sold separately.
 Click a shelf item or price tag to select it, then choose your purchase currency.
+Close with X, Esc, controller Back or a click outside the panel, even while loading.
 Rare, Epic and Legendary wildlife can spawn on all maps and sea routes.
 Paid islands and hidden habitats have better odds. Colors are more vibrant.
 Robux map unlocks and 5-pass packs are prepared, awaiting creator Product IDs.

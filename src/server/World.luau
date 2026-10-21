@@ -138,10 +138,10 @@ function World.sample(self, zone, random, scale)
 	local margin = math.max(3, scale * 4.5)
 	if zone.bounds and (zone.bounds.maxX - zone.bounds.minX <= margin * 2 or zone.bounds.maxZ - zone.bounds.minZ <= margin * 2) then return nil end
 	if not zone.bounds and zone.radius <= margin then return nil end
-	local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = {self.actors, self.boats}; params.IgnoreWater = true
+	local params = World.wildlifeParams(self)
 	local overlap = OverlapParams.new(); overlap.FilterType = Enum.RaycastFilterType.Exclude
-	overlap.FilterDescendantsInstances = {self.actors, self.boats, workspace.Terrain}; overlap.RespectCanCollide = true
+	local excluded=table.clone(params.FilterDescendantsInstances); table.insert(excluded,workspace.Terrain)
+	overlap.FilterDescendantsInstances = excluded; overlap.RespectCanCollide = true
 	for _ = 1, 12 do
 		local position
 		if zone.bounds then
@@ -162,11 +162,18 @@ function World.sample(self, zone, random, scale)
 	return nil
 end
 
+function World.wildlifeParams(self)
+	local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude
+	local excluded = {self.actors, self.boats}
+	for _, player in Players:GetPlayers() do if player.Character then table.insert(excluded, player.Character) end end
+	params.FilterDescendantsInstances = excluded; params.IgnoreWater = true; params.RespectCanCollide = true
+	return params
+end
+
 function World.canRoam(self, origin, target, scale)
 	local delta = target - origin
 	if delta.Magnitude < 0.01 then return true end
-	local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = {self.actors, self.boats}; params.IgnoreWater = true
+	local params = World.wildlifeParams(self)
 	return workspace:Blockcast(CFrame.new(origin), Vector3.new(9, 3, 9) * scale, delta, params) == nil
 end
 
@@ -190,8 +197,7 @@ function World.route(self, origin, target, scale)
 	local ok = pcall(function() path:ComputeAsync(origin, target) end)
 	if not ok or path.Status ~= Enum.PathStatus.Success then return nil end
 	local points = {}
-	local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.IgnoreWater = true
-	params.FilterDescendantsInstances = {self.actors, self.boats}
+	local params = World.wildlifeParams(self)
 	for _, waypoint in path:GetWaypoints() do
 		if waypoint.Action == Enum.PathWaypointAction.Jump then return nil end
 		local hit = workspace:Raycast(waypoint.Position + Vector3.new(0, 10, 0), Vector3.new(0, -22, 0), params)

@@ -37,7 +37,7 @@ Use the bottom navigation on all devices. Desktop shortcuts: **J** journal, **B*
 
 Ark Outfitters is a walk-in shop in the existing pointed Atrium, with an open north-facing doorway, striped awning, counter, shelving, modeled merchandise and visible prices. The Store panel adds category filters, 3D item previews, and separate coin/Ark Point purchase buttons. All fifteen items support either currency. Spending points also affects the existing level formula.
 
-Twelve species have escape behavior: fox, deer, raccoon, boar, parrot, eagle, jaguar, tiger, snow leopard, frostlight fox, ibex and peacock. Approaching too closely or failing a valid rescue can make them flee. Bursts last 3.5 seconds, followed by a rest; flying birds rise briefly and must land before rescue. Fleeing lowers capture chance by 14 percentage points. Capture holds are checked on the server; failed attempts also impose a short recovery. Ground-checked destinations and wall sweeps keep wildlife within accessible terrain; secluded species stay in their hidden habitats.
+Every species flees after a missed eligible rescue, including rabbits and marine animals. Twelve skittish species also flee on close approach: fox, deer, raccoon, boar, parrot, eagle, jaguar, tiger, snow leopard, frostlight fox, ibex and peacock. Four-second bursts steer away from the pursuing player and try shorter sidesteps around obstacles; birds rise briefly and land. Standing on an animal cannot block its navigation. Gentle snares intentionally hold animals still. Fleeing lowers capture chance by 14 percentage points. Capture holds and recovery are checked on the server. Ground/water checks and wall sweeps constrain movement; rare and secluded animals stay in their home habitats.
 
 New purchases:
 
@@ -52,7 +52,7 @@ New purchases:
 
 Field Kit activates supplies anywhere; placing snares requires level dry ground, consumes a charge only on a valid placement and permits two active snares per player. Gear/tier/full-pack rules still apply to snared rescues. Scanner signals last only during the scan and show at most six nearby creatures. Unused supplies and equipped cosmetics persist in the v1 journal; active sprint/scan timers are session state. Sprint raises running speed from 18 to 28 studs/second; swimming also accelerates without extending endurance. Server movement sampling accounts for the boost when awarding ten-step/stroke bonuses.
 
-Chest rewards now have local celebrations: small confetti for modest coins, balloons for better prizes, and larger/multiple firework bursts for gear and rare/legendary animals. Trap results use a distinct subdued burst. These visual effects grant no rewards and are cleaned up automatically. The paid shop offers only guaranteed bundles; opening surprise chests remains free.
+Chest openings play a short fullscreen 3D cutscene: a camera moves toward a shaking chest, its lid opens, and the actual prize floats into view. Better prizes add balloons, confetti and larger firework displays. Reward scenes last 4.4–6.5 seconds; trap reveals last 3.8 seconds with a distinct danger effect. Skip with the on-screen button, Space, Escape or controller Back. The server awards/reserves the result before playback, so skipping never loses or rerolls it. Completion, skipping, respawn and errors restore input and remove the scene. The paid shop offers only guaranteed bundles; opening surprise chests remains free.
 
 ### Island access, teleports and the fixed wallet
 
@@ -70,7 +70,7 @@ Teleports require an unlocked destination and a living, unseated explorer. There
 
 Base per-spawn rarity budgets, when matching species exist: Ark **1.5% Rare / 0.5% Epic / 0.08% Legendary**; Canopy **5% / 1.8% / 0.4%**; Moonstone **7.5% / 3% / 0.8%**. Hidden habitats multiply them by 1.8 and open seaways by 1.2. Missing rarity budgets return to common wildlife. These are spawn probabilities, not guarantees or capture odds. Five added sea routes target 15 additional animals; the new Legendary Sunburst Ray can appear in reefs and seaways. The archipelago targets 96 ordinary animals plus 2 event mantas.
 
-Click/tap a shelf item or its price tag to open that selected product. Store preview models are selectable too. The purchase card offers coins or points; it does not charge merely for selecting an item.
+Click/tap a shelf item or its price tag to open that selected product. Store preview models are selectable too. The purchase card offers coins or points; it does not charge merely for selecting an item. Close any notebook panel with ×, Escape, controller Back or a click outside it. Closing works locally while a server request is pending, and a late inspection response cannot reopen it.
 
 ### Swimming and movement bonuses
 
