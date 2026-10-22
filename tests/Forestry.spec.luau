@@ -34,8 +34,8 @@ test("roots and undergrowth stay on dry ground clear of paved routes and indoor 
 	for i,plan in plans do
 		local s=plan.Source.scale
 		for group,plants in {forests[i].trees,forests[i].ground} do
-			local radius=if group==1 then 5 else 2.5
 			for _,plant in plants do
+				local radius=if group==1 then 5 elseif plant.kind=="mound" then 6 elseif plant.kind=="log" then 5 elseif plant.kind=="rock" then 3 else 2.5
 				for _,delta in {{0,0},{1,1},{1,-1},{-1,1},{-1,-1}} do
 					assert(not Geometry.inWater(plan,plant.x+delta[1]*radius/s,plant.y+delta[2]*radius/s),plan.Id.." plant in water")
 				end
@@ -87,6 +87,20 @@ test("animal habitats retain central gathering clearings with pines in mountain 
 			end
 		end
 	end
+end)
+test("the denser woodland adds trees on every island and includes low terrain",function()
+	local baseline={160,106,155}; local total=0
+	for i,forest in forests do
+		assert(#forest.trees>=baseline[i]*1.2); total+=#forest.trees; assert(#forest.ground>=240)
+		local mounds,rocks=0,0
+		for _,plant in forest.ground do if plant.kind=="mound" then mounds+=1 elseif plant.kind=="rock" then rocks+=1 end end
+		assert(mounds>=5 and rocks>=20)
+	end
+	assert(total>=560)
+end)
+test("tree structure and terrain are solid while leaves and small plants stay passable",function()
+	for _,name in {"Trunk","PineTrunk","PalmBase","PalmBend","PalmTop","Fork","FallenLog","WoodlandStone","GrassyRise"} do assert(Forestry.solid(name)) end
+	for _,name in {"LeafCrown","HighCrown","EvergreenLayer","PalmFrond","FernFrond","Wildflower","RockMoss","RiseFlowers","BarkMark"} do assert(not Forestry.solid(name)) end
 end)
 print(string.format("Forestry: %d passed, %d failed (layout data, not Studio rendering)",passed,failed))
 if failed>0 then error("Forestry regressions failed") end

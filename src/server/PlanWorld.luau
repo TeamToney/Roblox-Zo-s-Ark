@@ -66,9 +66,9 @@ function PlanWorld.build(world, part, label)
 			end
 		end
 		local habitat = room.kind == "meadow" or room.kind == "jungle" or room.kind == "summit"
-		local wallHeight = if habitat then 5 else (room.height or Layout.WallHeight)
+		local wallHeight = math.max(Layout.WallHeight,room.height or 0)
 		local wallBottom = if room.id == "reefAlcove" then Layout.SeabedY else Layout.FloorY
-		if room.id == "reefAlcove" then wallHeight = Layout.FloorY + 3 - wallBottom end
+		if room.id == "reefAlcove" then wallHeight = Layout.FloorY + Layout.WallHeight - wallBottom end
 		for _, segment in Geometry.walls(room) do
 			stroke(model, "PlanWall", segment, wallBottom, wallHeight, Layout.WallThickness, palette.wall, Enum.Material.Sandstone)
 			stroke(model, "WallCap", segment, wallBottom + wallHeight, 0.25, Layout.WallThickness + 0.15, if habitat then palette.mint else palette.wood, Enum.Material.SmoothPlastic)

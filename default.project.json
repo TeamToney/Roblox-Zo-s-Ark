@@ -9,7 +9,7 @@
       "ZoServer": { "$path": "src/server" }
     },
     "StarterPlayer": {
-      "$properties": { "CharacterWalkSpeed": 18 },
+      "$properties": { "CharacterWalkSpeed": 18, "CharacterUseJumpPower": false, "CharacterJumpHeight": 5 },
       "StarterPlayerScripts": { "ZoClient": { "$path": "src/client" } }
     },
     "Workspace": {

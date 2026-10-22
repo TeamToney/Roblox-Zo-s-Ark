@@ -20,7 +20,7 @@ Layout.ShoreExits = {
 	{x = 55, y = 900, dx = -1, dy = 0},
 	{x = 1490, y = 1200, dx = 1, dy = 0},
 }
-Layout.WallHeight = 8
+Layout.WallHeight = 14
 Layout.WallThickness = 1.2
 Layout.Hub = {814, 700}
 Layout.Spawn = {814, 1550}

@@ -5,6 +5,7 @@ local MusicView = require(script.Parent.MusicView)
 local RewardAudio=require(script.Parent.RewardAudio)
 local NightGear=require(script.Parent.NightGear)
 local lootStatus=require(script.Parent.LootStatus).new()
+local AnimalPortrait=require(script.Parent.AnimalPortrait)
 local GuiService = game:GetService("GuiService")
 local CurrencyHUD = require(script.Parent.CurrencyHUD)
 local TravelView = require(script.Parent.TravelView)
@@ -147,14 +148,15 @@ local function journal()
 		local count = state.profile.inventory[id] or 0
 		local found = state.profile.discovered[id]
 		local rarity = Color3.fromRGB(unpack(Catalog.Rarities[species.rarity].color))
-		local frame = card(126)
+		local frame = card(156)
+		AnimalPortrait.draw(frame,species,make)
 		local stripe = make("Frame", {BackgroundColor3 = rarity, BorderSizePixel = 0, Size = UDim2.new(0, 4, 1, -20), Position = UDim2.fromOffset(0, 10)}, frame); corner(stripe, 3)
-		text(frame, species.name, 16, if found then palette.cream else palette.muted, UDim2.fromOffset(14, 10), UDim2.new(1, -130, 0, 26), true)
-		text(frame, species.rarity .. " • " .. string.upper(species.habitat) .. " • Tier " .. species.tier, 11, rarity, UDim2.fromOffset(14, 39), UDim2.new(1, -28, 0, 20), true)
-		text(frame, number(species.points) .. " pts / catch  ·  " .. number(species.value) .. " coins / trade", 12, palette.muted, UDim2.fromOffset(14, 72), UDim2.new(1, -146, 0, 44))
-		text(frame, if count > 0 then "CARRYING " .. count else (if found then "DISCOVERED" else "UNDISCOVERED"), 10, if count > 0 then palette.mint else palette.muted, UDim2.new(1, -129, 0, 13), UDim2.fromOffset(116, 22), true).TextXAlignment = Enum.TextXAlignment.Right
+		text(frame, species.name, 16, if found then palette.cream else palette.muted, UDim2.fromOffset(104, 7), UDim2.new(1, -116, 0, 42), true)
+		text(frame, species.rarity .. " • " .. string.upper(species.habitat) .. " • Tier " .. species.tier, 11, rarity, UDim2.fromOffset(104, 49), UDim2.new(1, -116, 0, 36), true)
+		text(frame, number(species.points) .. " pts / catch  ·  " .. number(species.value) .. " coins / trade", 12, palette.muted, UDim2.fromOffset(104, 87), UDim2.new(1, -116, 0, 32))
+		text(frame, if count > 0 then "CARRYING " .. count else (if found then "DISCOVERED" else "UNDISCOVERED"), 10, if count > 0 then palette.mint else palette.muted, UDim2.fromOffset(14,126), UDim2.new(1,-152,0,22), true)
 		if count > 0 then
-			button(frame, if pendingTrade == id then "Confirm trade" else "Trade 1", UDim2.new(1, -129, 0, 68), UDim2.fromOffset(116, 32), function()
+			button(frame, if pendingTrade == id then "Confirm trade" else "Trade 1", UDim2.new(1, -129, 0, 122), UDim2.fromOffset(116, 28), function()
 				if not state.atShop then notify("Visit Ark Outfitters to transfer animals to the sanctuary."); return end
 				if Catalog.Rarities[species.rarity].rank >= 3 and pendingTrade ~= id then
 					pendingTrade = id; notify("This transfers one " .. species.name .. " permanently. Its journal discovery stays."); render(); return
@@ -175,7 +177,7 @@ local function store()
 end
 local function kit()
 	title.Text="Your field kit"
-	description.Text="Use supplies anywhere. Desktop: 1 Sprint • 2 Snare • 3 Scanner. Cosmetics stay equipped after respawn."
+	description.Text="Desktop: 1 Sprint • 2 Snare • 3 Scanner • 6 Trail Leap. Cosmetics stay equipped after respawn."
 	ShopView.kit(shopContext())
 end
 
@@ -317,7 +319,8 @@ local function guide()
 	local checkpoint = Catalog.Checkpoints[state.respawnCheckpoint]
 	section("Island access & checkpoints", "Open Travel to unlock Canopy Reach or Moonstone Isle with coins, points or configured Robux offers. Then sail there or buy a teleport. Activate checkpoints to save your respawn, then finish island challenges on the expedition board. Current respawn: " .. (if checkpoint then checkpoint.name else "Ark southern entrance") .. ".", 155)
 	section("Surprise chests", "Each chest is free to open once per explorer per UTC day. Find coins, hidden animals, gear, sprint boosts or snares; some chests trap you, remove points or kill your character. Death returns you to your checkpoint. Your collected animals and gear stay.", 160)
-	section("Chase, track & rescue", "Nervous animals run; birds briefly fly away, then land. Sprint to keep up, use camouflage to approach, or place a gentle snare. The scanner reveals nearby wildlife. Desktop: 1 sprint, 2 snare, 3 scan; Field Kit works on touch too.", 166)
+	section("Spot, identify & rescue", "Look for animal shapes and coat patterns. Journal portraits help you identify them; names appear only within 12 studs in clear view. Predators give a nearby danger warning. Nervous animals run or fly away. Sprint, camouflage, snares and the scanner help you approach. Keys: 1 sprint, 2 snare, 3 scan; Field Kit supports touch too.", 192)
+	section("Trees & trail leaps", "Trunks, rocks and fallen logs are solid. Follow the open paths and doorways through the taller walls. Buy Trail Leap at Outfitters for 110 coins or 75 points, then use Field Kit / key 6 for 45 seconds of higher jumps. It ends on respawn and does not unlock paid islands.", 160)
 	section("Hidden wildlife", "Hold Rescue for 0.65–1.2 seconds, depending on rarity. Common wildlife can wander through connected rooms. Rare, Epic and Legendary wildlife can appear on every island and sea route. Paid islands and secluded habitats offer better odds.", 138)
 	section("Swim safely", "Start with 30 seconds of endurance. A snorkel gives 60s; the diving kit gives 180s. A life jacket adds 60s to either. Rest on land or in a boat to recover. At zero endurance, health drains: look for marked shore steps, orange life rings and green first-aid floats.", 176)
 	section("Water recovery pickups", "Life rings restore 15s and pause fatigue for 20s. First-aid floats restore 25 health and 20s of endurance. Hold their nearby prompt while swimming. Used pickups return after 90 seconds.", 144)
@@ -422,6 +425,7 @@ end)
 script.Destroying:Connect(function() music:destroy() end)
 local stopNightGear=NightGear.start(player)
 script.Destroying:Connect(stopNightGear)
+script.Destroying:Connect(require(script.Parent.WildlifeHints).start(player))
 script.Destroying:Connect(lootStatus.destroy)
 send = function(verb, id, amount, currency)
 	if requestBusy then return end
@@ -500,6 +504,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
 	local kitKeys={[Enum.KeyCode.One]="speedBoost",[Enum.KeyCode.Two]="animalTrap",[Enum.KeyCode.Three]="tracker"}
 	kitKeys[Enum.KeyCode.Four]="tranquilizer"; kitKeys[Enum.KeyCode.Five]="predatorTrap"; kitKeys[Enum.KeyCode.F]="flashlight"; kitKeys[Enum.KeyCode.V]="nightVision"
+	kitKeys[Enum.KeyCode.Six]="jumpBoost"
 	if kitKeys[input.KeyCode] then send("use",kitKeys[input.KeyCode]); return end
 	local page = hotkeys[input.KeyCode]
 	if page then if panel.Visible and currentPage == page then closeNotebook() else open(page) end end

@@ -1,5 +1,5 @@
 --!strict
-local Forestry={MaxTrees=160,MaxGround=180}
+local Forestry={MaxTrees=260,MaxGround=280}
 export type Plant={x: number,y: number,kind: string,scale: number,yaw: number,tint: number}
 type Candidate={x: number,y: number,habitat: string,rank: number}
 local habitats={meadow=true,jungle=true,summit=true} :: {[string]: boolean}
@@ -75,7 +75,7 @@ function Forestry.generate(plan: any,Geometry: any): {trees: {Plant},ground: {Pl
 	local seed=if plan.Id=="canopy" then 23 elseif plan.Id=="moonstone" then 47 else 11
 	local trees: {Plant}={}; local ground: {Plant}={}
 	local candidates: {Candidate}={}
-	local spacing=20/s
+	local spacing=17/s
 	for y=plan.Bounds[2]+spacing/2,plan.Bounds[4]-spacing/2,spacing do
 		for x=plan.Bounds[1]+spacing/2,plan.Bounds[3]-spacing/2,spacing do
 			local px=x+(noise(x,y,seed)-0.5)*spacing*0.55
@@ -104,15 +104,19 @@ function Forestry.generate(plan: any,Geometry: any): {trees: {Plant},ground: {Pl
 	end
 	-- Low undergrowth is grouped around trees, with the same access exclusions.
 	for index,tree in trees do
-		for offset=1,2 do
+		for offset=1,3 do
 			if #ground>=Forestry.MaxGround then break end
 			local angle=tree.yaw+offset*2.4
 			local x,y=tree.x+math.cos(angle)*8/s,tree.y+math.sin(angle)*8/s
-			if not site.site(x,y,2.5) then continue end
-			local kind=if index%19==0 and offset==1 then "log" elseif (index+offset)%11==0 then "rock" elseif (index+offset)%4==0 then "flowers" else "fern"
+			local kind=if index%7==0 and offset==1 then "mound" elseif index%19==0 and offset==1 then "log" elseif (index+offset)%7==0 then "rock" elseif (index+offset)%4==0 then "flowers" else "fern"
+			if not site.site(x,y,if kind=="mound" then 6 elseif kind=="log" then 5 elseif kind=="rock" then 3 else 2.5) then continue end
 			table.insert(ground,{x=x,y=y,kind=kind,scale=0.8+tree.tint*0.4,yaw=angle,tint=tree.tint})
 		end
 	end
 	return {trees=trees,ground=ground}
+end
+-- Only woody structure and low terrain block traversal; foliage stays soft.
+function Forestry.solid(name: string): boolean
+	return name=="Trunk" or name=="PineTrunk" or name=="PalmBase" or name=="PalmBend" or name=="PalmTop" or name=="Fork" or name=="FallenLog" or name=="WoodlandStone" or name=="GrassyRise"
 end
 return Forestry

@@ -32,7 +32,7 @@ function Rules.new(catalog: any, config: any)
 	function api.blank(now: number): Profile
 		return {
 			coins = config.StartingCoins, points = 0, inventory = {}, owned = {}, discovered = {}, titles = {}, bait = 0,
-			stock = {speedBoost = 0, animalTrap = 0, teleportPass = 0,flashlight=0,predatorTrap=0}, wardrobe = {}, receipts = {}, maps = {ark = true},
+			stock = {speedBoost = 0, jumpBoost = 0, animalTrap = 0, teleportPass = 0,flashlight=0,predatorTrap=0}, wardrobe = {}, receipts = {}, maps = {ark = true},
 			stats = {catches = 0, rare = 0, distance = 0, traded = 0, walkDistance = 0, swimDistance = 0},
 			daily = {day = math.floor(now / 86400), catches = 0, rare = 0, distance = 0, claimed = {}},
 			event = {id = -2, captures = 0, claimed = false},

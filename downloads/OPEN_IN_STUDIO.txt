@@ -64,10 +64,11 @@ If a playlist cannot load, try another style or use Retry after a short wait.
 Your choices last through respawns and reset on a new session.
 
 OUTDOOR FORESTRY
-421 trees now cover the three islands, with varied leafy groves, birches,
+598 trees now cover the three islands, with varied leafy groves, birches,
 tropical palms and mountain pines. Look for ferns, flowers, mossy stones and logs.
 Habitat centers, paths, doorways, chests, checkpoints and shore approaches stay clear.
-The forest is scenery; it does not block running animals or rescue checks.
+Tree trunks, forks, logs, rocks and low grassy rises are solid. Leaves stay passable.
+Animal navigation and rescue sightlines respect the solid obstacles.
 
 NIGHT EXPEDITIONS & CASH-REGISTER CHIMES
 Successful captures and positive chest finds now ring with a short chi-ching.
@@ -92,3 +93,12 @@ is at least 70 studs away. Moving never resets a find's daily opening limit.
 Your opened finds show OPENED TODAY until midnight UTC.
 Animals choose new compatible habitats when spawning and roam more frequently.
 Rarity, island access, hidden habitats and event locations keep their rules.
+
+TRAIL LEAP & WILDLIFE IDENTIFICATION
+Walls are now fourteen studs tall; normal jumps reach five studs. Use doorways.
+Buy Trail Leap at Outfitters for 110 coins or 75 points, then press 6 / Field Kit.
+It gives sixteen-stud jumps for 45 seconds and ends on respawn.
+Animal names now appear only within twelve studs in clear view.
+Learn silhouettes and coat patterns from the Journal's new 3D portraits.
+Visible predators give a generic warning within twenty-four studs.
+Boars, night panthers and reef sharks now have distinct, more detailed anatomy.

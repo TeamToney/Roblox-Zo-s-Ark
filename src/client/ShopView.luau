@@ -85,12 +85,13 @@ function ShopView.kit(ctx)
 		local label=if id=="flashlight" then (if kit.flashlightOn then "Switch off" else "Switch on").." • "..math.ceil(reserve).."s / "..count.." cells" elseif id=="nightVision" then (if kit.nightVision then "Disable vision" else "Enable vision") elseif id=="tranquilizer" then "Sedate nearest threat" else "Place snare • "..count
 		ctx.button(f,label,UDim2.new(0,12,1,-46),UDim2.new(1,-24,0,34),function() ctx.send("use",id) end,count<=0 and not (id=="flashlight" and reserve>0))
 	end
-	for _, id in {"speedBoost","animalTrap","tracker"} do
+	for _, id in {"speedBoost","jumpBoost","animalTrap","tracker"} do
 		local item=Catalog.Items[id]; local f=ctx.card(174); preview(f,id,item.kind,ctx.make)
 		local count=if item.stock then s.profile.stock[id] or 0 else (if s.profile.owned[id] then 1 else 0)
 		ctx.text(f,item.name,16,p.cream,UDim2.fromOffset(108,9),UDim2.new(1,-120,0,42),true)
 		ctx.text(f,item.description,12,p.muted,UDim2.fromOffset(108,50),UDim2.new(1,-120,0,70))
-		ctx.button(f,(if id=="animalTrap" then "Place" elseif id=="tracker" then "Scan" else "Activate").."  •  "..count,UDim2.new(0,12,1,-46),UDim2.new(1,-24,0,34),function() if count>0 then ctx.send("use",id) end end,count<=0)
+		local jumping=id=="jumpBoost" and (s.kit and s.kit.jump or 0)>0
+		ctx.button(f,if jumping then "Leap active • "..math.ceil(s.kit.jump).."s" else (if id=="animalTrap" then "Place" elseif id=="tracker" then "Scan" else "Activate").."  •  "..count,UDim2.new(0,12,1,-46),UDim2.new(1,-24,0,34),function() if count>0 then ctx.send("use",id) end end,count<=0 or jumping)
 	end
 	for _, id in {"safariHat","mintTrail"} do
 		local item=Catalog.Items[id]; local f=ctx.card(128); preview(f,id,item.kind,ctx.make)

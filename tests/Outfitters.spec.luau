@@ -126,5 +126,29 @@ test("ranger products grant missing equipment and compensate only fully owned bu
 	local partial=Rules.blank(now); partial.owned.safariHat=true
 	assert(Rules.grantProduct(partial,"explorerStyle")); equal(partial.coins,100); equal(partial.owned.mintTrail,true)
 end)
+test("jump boost stock is additive and preserves old journals and island locks",function()
+	local p=Rules.sanitize({coins=1000,inventory={rabbit=2},stock={speedBoost=3}},now)
+	equal(p.stock.jumpBoost,0); equal(p.stock.speedBoost,3); equal(p.inventory.rabbit,2)
+	assert(Rules.buy(p,"jumpBoost","points")==false); equal(p.stock.jumpBoost,0)
+	assert(Rules.buy(p,"jumpBoost","coins")); equal(p.stock.jumpBoost,1); equal(p.coins,890)
+	local restored=Rules.sanitize(p,now); equal(restored.stock.jumpBoost,1)
+	assert(Rules.consume(restored,"jumpBoost")); equal(Rules.consume(restored,"jumpBoost"),false)
+	equal(restored.maps.canopy,nil); equal(restored.maps.moonstone,nil)
+end)
+test("ordinary jumps stay below walls while the temporary leap can clear them",function()
+	local plans: {any}={require("../src/shared/MapLayout"),unpack(require("../src/shared/IslandLayouts").Islands)}
+	for _,plan in plans do assert(plan.WallHeight>=Config.JumpHeight+8 and plan.WallHeight<Config.JumpBoostHeight) end
+	equal(Config.JumpBoostSeconds,45)
+end)
+test("animal names require a close clear view and predator warnings reveal no distant identity",function()
+	equal(Encounter.identification(12,true,false,Config),"identify")
+	equal(Encounter.identification(12.01,true,false,Config),"hidden")
+	equal(Encounter.identification(12,true,true,Config),"identify")
+	equal(Encounter.identification(12.01,true,true,Config),"warning")
+	equal(Encounter.identification(24,true,true,Config),"warning")
+	equal(Encounter.identification(24.01,true,true,Config),"hidden")
+	for _,distance in {0,12,24} do equal(Encounter.identification(distance,false,true,Config),"hidden") end
+	for _,distance in {-1,0/0,math.huge} do equal(Encounter.identification(distance,true,true,Config),"hidden") end
+end)
 print(string.format("\n%d outfitters/encounter cases passed, %d failed (pure rules, not Studio visuals)",passed,failed))
 if failed>0 then error("Outfitters checks failed") end

@@ -19,8 +19,9 @@ function Forestry.build(plan,parent,part)
 			if plan.Id=="moonstone" then leaf=leaf:Lerp(rgb(45,143,137),0.4); light=leaf:Lerp(rgb(164,219,156),0.25) end
 			local function p(name,dimensions,at,color,material,shape,rotation)
 				local result=part(model,name,dimensions*size,origin*CFrame.new(at*size)*(rotation or CFrame.identity),color,material or Enum.Material.Grass,shape)
-				-- These are scenery, so they never pin wildlife or block rescue rays.
-				result.CanCollide=false; result.CanTouch=false; result.CanQuery=false
+				-- Real trunks/terrain participate in navigation and rescue sightlines.
+				local solid=Layout.solid(name)
+				result.CanCollide=solid; result.CanTouch=false; result.CanQuery=solid
 				result.CastShadow=collection==plants.trees
 				return result
 			end
@@ -70,6 +71,9 @@ function Forestry.build(plan,parent,part)
 			elseif plant.kind=="rock" then
 				p("WoodlandStone",Vector3.new(3.5,2.1,3),Vector3.new(0,0.85,0),rgb(115,143,128),Enum.Material.Slate,Enum.PartType.Ball)
 				p("RockMoss",Vector3.new(2.5,0.45,2),Vector3.new(0,1.8,0),leaf,nil,Enum.PartType.Ball)
+			elseif plant.kind=="mound" then
+				p("GrassyRise",Vector3.new(9,3.6,8),Vector3.new(0,0.5,0),leaf,Enum.Material.Grass,Enum.PartType.Ball)
+				p("RiseFlowers",Vector3.new(1.2,0.5,1.2),Vector3.new(1.5,2,0),rgb(255,203,71),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
 			end
 			model.Parent=folder
 		end

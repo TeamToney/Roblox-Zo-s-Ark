@@ -47,11 +47,8 @@ function Wildlife:spawn(zone, id)
 	model.PrimaryPart = root
 	local rig = AnimalModels.build(self.world, model, root, species)
 	local title = self.world.label(root, species.name .. "\n" .. species.rarity .. " • Tier " .. species.tier, 4 * scale, 240)
-	title.TextColor3 = Color3.fromRGB(unpack(self.catalog.Rarities[species.rarity].color))
-	if species.dangerous then
-		title.Text=species.name.."\nDANGER • restrain before rescue"; title.TextColor3=Color3.fromRGB(255,105,112)
-		local outline=Instance.new("Highlight"); outline.FillTransparency=1; outline.OutlineColor=Color3.fromRGB(255,90,105); outline.DepthMode=Enum.HighlightDepthMode.Occluded; outline.Parent=model
-	end
+	title.Parent.Name="AnimalIdentification"; title.Parent.Enabled=false
+	title.Parent.MaxDistance=60 -- Client also checks explorer distance and sightline.
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Rescue animal"; prompt.ObjectText = species.name .. " • " .. species.rarity
 	prompt.MaxActivationDistance = 12; prompt.HoldDuration = EncounterRules.holdTime(self.world.config.CaptureHold,self.catalog.Rarities[species.rarity].rank)

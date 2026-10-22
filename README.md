@@ -39,7 +39,7 @@ Animals also choose different compatible habitats when they spawn, including add
 
 ### Outfitters, escapes and field kit
 
-Ark Outfitters is a walk-in shop in the existing pointed Atrium, with an open north-facing doorway, striped awning, counter, shelving, modeled merchandise and visible prices. The Store panel adds category filters, 3D item previews, and separate coin/Ark Point purchase buttons. All fifteen items support either currency. Spending points also affects the existing level formula.
+Ark Outfitters is a walk-in shop in the existing pointed Atrium, with an open north-facing doorway, striped awning, counter, shelving, modeled merchandise and visible prices. The Store panel adds category filters, 3D item previews, and separate coin/Ark Point purchase buttons. All nineteen items support either currency. Spending points also affects the existing level formula.
 
 Every species flees after a missed eligible rescue, including rabbits and marine animals. Twelve skittish species also flee on close approach: fox, deer, raccoon, boar, parrot, eagle, jaguar, tiger, snow leopard, frostlight fox, ibex and peacock. Four-second bursts steer away from the pursuing player and try shorter sidesteps around obstacles; birds rise briefly and land. Standing on an animal cannot block its navigation. Gentle snares intentionally hold animals still. Fleeing lowers capture chance by 14 percentage points. Capture holds and recovery are checked on the server. Ground/water checks and wall sweeps constrain movement; rare and secluded animals stay in their home habitats.
 
@@ -48,6 +48,7 @@ New purchases:
 | Item | Coins | Ark Points | Effect |
 | --- | ---: | ---: | --- |
 | Expedition Sprint | 90 | 60 | One 45-second run/swim boost; no stacking |
+| Trail Leap | 110 | 75 | Key **6** / Field Kit; one 45-second, 16-stud jump boost; ends on respawn |
 | Gentle Animal Snare | 120 | 80 | One 45-second land trap; holds one animal for 8 seconds, +22 percentage points capture chance |
 | Wildlife Scanner | 850 | 550 | Permanent equipment; 20-second scan within 140 studs, 30-second cooldown |
 | Ranger Camouflage | 550 | 360 | Permanent equipment; reduces animal alert radius to 55% |
@@ -97,9 +98,17 @@ Predators **must actually be sedated or caught in a Predator Rescue Snare before
 
 ### Outdoor forests
 
-The default archipelago has 421 trees: 160 around the Ark, 106 on Canopy Reach and 155 on Moonstone Isle. Broadleaf and birch groves surround the Ark, tropical crowns and palms fill Canopy habitats, and cooler pines/birches characterize Moonstone. Each island also has 180 low plants or props: ferns, wildflowers, mossy stones and fallen logs. Sizes, canopy shapes and greens vary while retaining Roblox-style primitive models.
+The default archipelago has 598 trees: 260 around the Ark, 144 on Canopy Reach and 194 on Moonstone Isle. Broadleaf and birch groves surround the Ark, tropical crowns and palms fill Canopy habitats, and cooler pines/birches characterize Moonstone. Each island also has 280 low plants or terrain props: ferns, wildflowers, mossy stones, fallen logs and rounded grassy rises. Sizes, canopy shapes and greens vary while retaining Roblox-style primitive models.
 
-Planting follows dry ground and keeps paved routes, indoor rooms, shore steps, docks, checkpoints, chests, the spawn and Outfitters clear. Habitat centers and doorway-to-center lanes stay open for animal chases. Vegetation is decorative: it has no collision, touch or query surfaces that can block wildlife navigation or capture checks. Models stream individually and have no per-frame animation loop. Visual framing, streaming and mobile performance still need Studio review.
+Planting follows dry ground and keeps paved routes, indoor rooms, shore steps, docks, checkpoints, chests, the spawn and Outfitters clear. Habitat centers and doorway-to-center lanes stay open for animal chases. Tree trunks, woody forks, fallen logs, boulders and grassy rises are solid and block movement and rescue sightlines. Leaves, flowers and ferns remain passable. Wildlife spawning and navigation respect the new obstacles. Models stream individually and have no per-frame animation loop. Visual framing, streaming and mobile performance still need Studio review.
+
+### Spotting wildlife and crossing walls
+
+Animal names no longer advertise locations across the world. Approach within **12 studs** with a clear view to identify a creature and see its rescue tier. Visible predators show a generic warning within **24 studs**; they have no permanent red outline. Use the **Journal’s 3D portraits**, silhouettes and coat patterns to learn species. Prices and points stay in the journal; the purchased Wildlife Scanner still provides its temporary nearby signals.
+
+Boars now have stocky shoulders, a snout with nostrils, split hooves, bristles and curved tusks. Midnight Panthers use feline proportions, rounded ears, broad paws, subtle dark coat marks and a long curved tail. Nightfall Reef Sharks have a tapered head, pale underside, five gills per side, swept fins and an asymmetric vertical tail. These remain original Roblox primitive models with animated legs/fins/tails.
+
+Campus walls are **14 studs tall**, including habitat and coral-alcove walls. Normal jumps reach **5 studs**; follow doorways and paths. Buy **Trail Leap** for **110 coins / 75 points**, then use **6** or Field Kit: jumps reach **16 studs for 45 seconds**. Active boosts do not stack and end on respawn; unused charges save. A leap does not purchase island access. Solid terrain is kept low and away from walls and approaches.
 
 ### Ark Radio background music
 

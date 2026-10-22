@@ -9,12 +9,12 @@ function FieldKit.new(world, config, catalog, rules, getProfile, notify, effects
 	return setmetatable({world=world, config=config, catalog=catalog, rules=rules, getProfile=getProfile, notify=notify, effects=effects, access=TravelRules.new(catalog), records={}, traps={}},FieldKit)
 end
 function FieldKit:record(player)
-	if not self.records[player] then self.records[player] = {boostUntil=0,scanUntil=0,nextScan=0,nextTrap=0,flashRemaining=0,flashOn=false,visionOn=false,character=player.Character,lastGear=os.clock(),nextDart=0} end
+	if not self.records[player] then self.records[player] = {boostUntil=0,leapUntil=0,scanUntil=0,nextScan=0,nextTrap=0,flashRemaining=0,flashOn=false,visionOn=false,character=player.Character,lastGear=os.clock(),nextDart=0} end
 	return self.records[player]
 end
 function FieldKit:boosted(player) return self:record(player).boostUntil > os.clock() end
 function FieldKit:snapshot(player)
-	local r=self:record(player); return {boost=math.max(0,r.boostUntil-os.clock()),scan=math.max(0,r.scanUntil-os.clock()),flashlight=r.flashRemaining,flashlightOn=r.flashOn,nightVision=r.visionOn,dartCooldown=math.max(0,r.nextDart-os.clock())}
+	local r=self:record(player); return {boost=math.max(0,r.boostUntil-os.clock()),jump=math.max(0,r.leapUntil-os.clock()),scan=math.max(0,r.scanUntil-os.clock()),flashlight=r.flashRemaining,flashlightOn=r.flashOn,nightVision=r.visionOn,dartCooldown=math.max(0,r.nextDart-os.clock())}
 end
 function FieldKit:restrain(animal,seconds)
 	local now=os.clock()
@@ -22,7 +22,7 @@ function FieldKit:restrain(animal,seconds)
 	animal.routeVersion+=1; animal.path={}; animal.waypoint=1; animal.attackAt=0; animal.attackTarget=nil
 end
 function FieldKit:gearCharacter(r,char)
-	if r.character~=char then r.character=char; r.flashRemaining=0; r.flashOn=false; r.visionOn=false; r.lastGear=os.clock() end
+	if r.character~=char then r.character=char; r.leapUntil=0; r.flashRemaining=0; r.flashOn=false; r.visionOn=false; r.lastGear=os.clock() end
 end
 function FieldKit:params()
 	local p=RaycastParams.new(); p.FilterType=Enum.RaycastFilterType.Exclude; p.IgnoreWater=true; p.RespectCanCollide=true
@@ -58,6 +58,13 @@ function FieldKit:use(player,id)
 		if not target then return false,"No unrestrained predator in clear view within 35 studs." end
 		self:restrain(target,self.config.TranquilizerSeconds); r.nextDart=now+self.config.TranquilizerCooldown
 		return true,"Predator sedated for 45 seconds! Approach and hold Rescue."
+	elseif id=="jumpBoost" then
+		if r.leapUntil>now then return false,"Your Trail Leap is already active." end
+		if hum.SeatPart or hum.FloorMaterial==Enum.Material.Air or World.inWater(root.Position) then return false,"Activate Trail Leap while standing on land, outside a boat." end
+		if not self.rules.consume(profile,id) then return false,"Buy a Trail Leap at Outfitters first." end
+		r.leapUntil=now+self.config.JumpBoostSeconds
+		hum.UseJumpPower=false; hum.JumpHeight=self.config.JumpBoostHeight
+		return true,"Trail Leap active for 45 seconds! Jump to clear campus walls."
 	elseif id=="speedBoost" then
 		if r.boostUntil>now then return false,"Your sprint is already active." end
 		if not self.rules.consume(profile,id) then return false,"Buy or find an Expedition Sprint first." end
@@ -136,6 +143,10 @@ function FieldKit:start(wildlife)
 			local boost=math.max(0,r.boostUntil-now)
 			local speed=if boost>0 then (if h:GetState()==Enum.HumanoidStateType.Swimming then self.config.BoostSwimSpeed else self.config.BoostWalkSpeed) else 18
 			if h.WalkSpeed~=speed then h.WalkSpeed=speed end
+			local jump=math.max(0,r.leapUntil-now)
+			local height=if jump>0 then self.config.JumpBoostHeight else self.config.JumpHeight
+			h.UseJumpPower=false; if h.JumpHeight~=height then h.JumpHeight=height end
+			c:SetAttribute("ZoJumpRemaining",math.ceil(jump))
 			c:SetAttribute("ZoBoostRemaining",math.ceil(boost)); self:appearance(player,p,c)
 			if scanElapsed>=1 and now<r.scanUntil then
 				local targets={}

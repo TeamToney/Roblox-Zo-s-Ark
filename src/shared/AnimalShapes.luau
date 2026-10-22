@@ -40,7 +40,84 @@ function Shapes.build(species: any): {parts: {Piece}, joints: {[string]: Joint}}
 		end
 	end
 	local form = species.form
-	if form == "fish" then
+	if form=="boar" then
+		piece("BarrelBody",{2.15,1.9,3.4},{0,-0.05,0.1})
+		piece("ShoulderHump",{2,2.1,1.9},{0,0.15,-0.7})
+		piece("TaperedBoarHead",{1.45,1.35,1.8},{0,0.1,-1.9})
+		piece("LongBoarSnout",{1.05,0.78,0.95},{0,-0.18,-2.88})
+		piece("SnoutDisk",{0.9,0.62,0.2},{0,-0.14,-3.36},{128,103,86})
+		piece("LowerJaw",{1,0.3,1.2},{0,-0.5,-2.55})
+		for side=-1,1,2 do
+			piece("Nostril",{0.18,0.13,0.09},{side*0.23,-0.05,-3.49},dark)
+			piece("BoarEar",{0.62,0.9,0.45},{side*0.63,0.93,-1.7},fur,"wedge",{0,side*10,side*-28})
+			piece("EarInside",{0.28,0.45,0.1},{side*0.64,0.96,-1.96},{125,94,83},nil,{0,0,side*-28})
+			piece("BoarTusk",{0.24,0.55,0.3},{side*0.55,-0.1,-3.02},cream,"wedge",{-15,0,side*-18})
+			piece("TuskTip",{0.13,0.4,0.15},{side*0.6,0.3,-3.16},cream,"wedge",{-25,0,side*-12})
+			for _,z in {-0.95,1.1} do
+				local name="leg"..side..":"..z; joint(name,{side*0.7,-0.3,z},"x",if (side==-1)==(z<0) then 0 else math.pi,0.32)
+				piece("StockyUpperLeg",{0.6,0.85,0.65},{side*0.7,-0.65,z},fur,nil,nil,name)
+				piece("BoarLowerLeg",{0.34,0.65,0.38},{side*0.75,-1.12,z+0.12},fur,nil,nil,name)
+				for _,toe in {-0.13,0.13} do piece("ClovenHoof",{0.22,0.32,0.7},{side*0.75+toe,-1.47,z-0.03},dark,"block",nil,name) end
+			end
+		end
+		for i=1,6 do piece("BackBristle",{0.28,0.45,0.55},{0,1.03,-1.25+i*0.4},{63,55,47},"wedge",{-15,0,0}) end
+		joint("tail",{0,0.1,1.55},"y",0,0.22)
+		for i=1,3 do piece("CurledBoarTail",{0.22,0.24,0.45},{math.sin(i*0.9)*0.25,0.12+math.cos(i)*0.15,1.65+i*0.25},fur,nil,{0,i*30,0},"tail") end
+		eyes(0.56,0.42,-2.47)
+	elseif form=="panther" then
+		piece("LongFelineTorso",{1.65,1.5,3.7},{0,0,0.2})
+		piece("MuscularShoulders",{1.75,1.7,1.45},{0,0.05,-0.85})
+		piece("FelineHaunches",{1.85,1.6,1.6},{0,-0.05,1.1})
+		piece("FelineNeck",{1.18,1.2,1.4},{0,0.3,-1.4})
+		piece("PantherHead",{1.4,1.18,1.4},{0,0.55,-2.05})
+		piece("FelineJaw",{1.1,0.4,0.9},{0,0.22,-2.5})
+		piece("PantherNose",{0.38,0.22,0.18},{0,0.49,-2.98},{40,44,46})
+		for side=-1,1,2 do
+			piece("WhiskerPad",{0.62,0.45,0.6},{side*0.28,0.38,-2.63},{91,97,97})
+			piece("RoundFelineEar",{0.5,0.5,0.3},{side*0.55,1.2,-1.8})
+			piece("EarInside",{0.25,0.27,0.08},{side*0.55,1.21,-1.97},{104,97,94})
+			piece("Eye",{0.19,0.18,0.13},{side*0.54,0.76,-2.55},{174,174,99})
+			piece("FelinePupil",{0.07,0.14,0.14},{side*0.54,0.76,-2.59},dark)
+			piece("EyeBrow",{0.35,0.12,0.2},{side*0.51,0.9,-2.49},fur,nil,{0,0,side*-12})
+			for _,z in {-0.95,1.2} do
+				local name="leg"..side..":"..z; joint(name,{side*0.65,-0.3,z},"x",if (side==-1)==(z<0) then 0 else math.pi,0.4)
+				piece("FelineUpperLeg",{0.58,0.8,0.68},{side*0.65,-0.6,z},fur,nil,nil,name)
+				piece("FelineLowerLeg",{0.35,0.62,0.4},{side*0.66,-1.13,z},fur,nil,nil,name)
+				piece("FelinePaw",{0.65,0.34,0.8},{side*0.68,-1.46,z-0.14},{46,52,55},nil,nil,name)
+				for toe=-1,1 do piece("PawToe",{0.12,0.12,0.16},{side*0.68+toe*0.16,-1.5,z-0.49},{63,70,72},nil,nil,name) end
+			end
+			for i=1,4 do
+				local z=-0.6+i*0.45; local x=side*0.825*math.sqrt(1-(0.2/0.75)^2-((z-0.2)/1.85)^2)
+				piece("GhostRosette",{0.055,0.2,0.26},{x,0.2,z},{49,54,57})
+			end
+		end
+		joint("tail",{0,0.05,1.6},"y",0,0.24)
+		for i=1,5 do piece("CurvedFelineTail",{0.32,0.34,0.7},{math.sin(i*0.35)*0.45,0.05+i*0.04,1.6+i*0.34},if i==5 then dark else fur,nil,{0,i*4,0},"tail") end
+	elseif form=="reefShark" then
+		local pale={212,222,219}
+		piece("ReefSharkBody",{1.8,1.5,4.3},{0,0,0})
+		piece("TaperedSharkRear",{1.1,1.1,2.3},{0,0,1.6})
+		piece("PaleUnderside",{1.45,0.42,3.6},{0,-0.54,-0.15},pale)
+		piece("ReefSharkHead",{1.7,1.1,1.7},{0,-0.02,-1.9})
+		piece("ReefSharkSnout",{1.25,0.75,1.45},{0,-0.11,-2.65})
+		piece("SharkNoseTip",{0.65,0.45,0.65},{0,-0.15,-3.15})
+		piece("DorsalFin",{0.2,1.65,1.7},{0,1.12,0.15},fur,"wedge",{0,180,0})
+		piece("RearDorsalFin",{0.13,0.55,0.7},{0,0.62,1.8},fur,"wedge",{0,180,0})
+		for _,x in {-0.35,0,0.35} do piece("SharkMouth",{0.43,0.055,0.15},{x,-0.42,-2.8},dark,"block",{0,x*35,0}) end
+		for i=-3,3 do piece("SmallSharkTooth",{0.1,0.16,0.1},{i*0.16,-0.5,-2.9},pale,"wedge",{0,0,180}) end
+		for side=-1,1,2 do
+			piece("Eye",{0.16,0.17,0.12},{side*0.73,0.13,-2.36},dark)
+			piece("EyeHighlight",{0.05,0.05,0.03},{side*0.73,0.17,-2.43},cream)
+			for i=1,5 do piece("SharkGill",{0.035,0.52,0.12},{side*0.85,-0.02,-1.15+i*0.2},{61,80,88},"block") end
+			local name="flipper"..side; joint(name,{side*0.65,-0.3,-0.7},"z",side,0.1)
+			piece("SweptPectoralFin",{0.18,1.45,2},{side*1.2,-0.45,-0.6},fur,"wedge",{0,side*22,side*-70},name)
+			piece("PelvicFin",{0.14,0.75,0.9},{side*0.65,-0.4,1.55},fur,"wedge",{0,0,side*-70})
+		end
+		joint("tail",{0,0,1.6},"y",0,0.32)
+		piece("ReefTailStem",{0.55,0.65,1.4},{0,0,2.48},fur,nil,nil,"tail")
+		piece("VerticalSharkTail",{0.2,1.75,1.2},{0,0.55,3.15},fur,"wedge",{-15,180,0},"tail")
+		piece("LowerTailLobe",{0.2,1,0.9},{0,-0.6,3.15},fur,"wedge",{0,0,180},"tail")
+	elseif form == "fish" then
 		piece("StreamlinedBody", {1.35, 1.9, 3.6}, {0, 0, -0.1})
 		piece("Face", {1.25, 1.45, 1.5}, {0, 0, -1.65})
 		joint("tail", {0, 0, 1.35}, "y", 0, 0.45)

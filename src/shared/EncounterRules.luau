@@ -16,4 +16,9 @@ function EncounterRules.flight(mode: string, now: number, started: number, until
 	if mode ~= "fly" or now < started or now >= untilTime then return 0 end
 	return math.sin(math.clamp((now - started) / math.max(0.01, untilTime - started), 0, 1) * math.pi) * 7
 end
+function EncounterRules.identification(distance: number,visible: boolean,dangerous: boolean,config: any): string
+	if not visible or distance~=distance or distance<0 then return "hidden" end
+	if distance<=config.AnimalIdentifyDistance then return "identify" end
+	return if dangerous and distance<=config.PredatorWarningDistance then "warning" else "hidden"
+end
 return EncounterRules

@@ -18,7 +18,7 @@ The user provided `MAP 1.jpeg` as an inline architectural floor-plan image and c
 | Large eastern hall | Tidewater Hall, with connected reef/bluewater lagoons and a low boarding dock |
 | Eastern hall opening | A widened sea gate leading to an added open-sea encounter area |
 
-The base remains recognizable through its north-up orientation, entrance axis, pointed hall, flanking blocks, gallery rows and eastern hall. Roofs are omitted, habitat walls are low, and grass, trees, rocks and sea routes make it an outdoor adventure. The surrounding lawn and open-sea area are gameplay additions. The marine hall is one continuous water area with two encounter zones.
+The base remains recognizable through its north-up orientation, entrance axis, pointed hall, flanking blocks, gallery rows and eastern hall. Roofs are omitted, walls are fourteen studs tall, and grass, trees, rocks and sea routes make it an outdoor adventure. The surrounding lawn and open-sea area are gameplay additions. The marine hall is one continuous water area with two encounter zones.
 
 The Ark trace now contains 64 simplified room outlines and 12 habitat zones, including a coral alcove and secluded side-room habitats. Other side rooms remain circulation or decorative space; room names do not imply extra stores, working clinics or a second floor. Animal art is still procedural. The two additional islands are documented in [ISLANDS_DESIGN.md](ISLANDS_DESIGN.md).
 
@@ -42,7 +42,7 @@ Run `bash scripts/check.sh` to validate the source, map geometry and routes, reg
 
 ## Outdoor forests
 
-The Ark now has 160 broadleaf, birch, pine and palm trees plus 180 ferns, flower clumps, mossy stones and logs. ForestryLayout derives placement from the existing dry footprint, rooms, courtyards, corridors and markers. Forest groups leave the entrance, central avenue, Atrium, marine wing, shore steps and habitat gathering areas clear. Scenery has no collision/query surfaces to interfere with animal movement or rescue checks. This replaces the former sparse corner trees without changing the floor-plan trace.
+The Ark now has 260 broadleaf, birch, pine and palm trees plus 280 ferns, flower clumps, mossy stones, logs and low grassy rises. ForestryLayout derives placement from the existing dry footprint, rooms, courtyards, corridors and markers. Forest groups leave the entrance, central avenue, Atrium, marine wing, shore steps and habitat gathering areas clear. Trunks, logs, boulders and grassy rises have collision/query surfaces that characters and animal navigation must respect; foliage stays passable. Door and animal-center clearings remain open. Normal jumps cannot clear the fourteen-stud walls; Trail Leap provides a temporary higher jump. This replaces the former sparse corner trees without changing the floor-plan trace.
 
 ## Remaining Studio work
 

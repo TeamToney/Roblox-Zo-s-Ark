@@ -55,9 +55,9 @@ Catalog.Species = {
 Catalog.SpeciesOrder = {"rabbit", "fox", "deer", "monkey", "parrot", "jaguar", "goat", "eagle", "snowLeopard", "reefFish", "seaTurtle", "dolphin", "whale", "auroraRay", "capybara", "raccoon", "boar", "redPanda", "peacock", "tiger", "ibex", "arcticFox", "mackerel", "seal", "hammerhead", "axolotl"}
 Catalog.Species.sunRay = {name = "Sunburst Ray", habitat = "reef", rarity = "Legendary", tier = 4, difficulty = 0.70, value = 1350, points = 850, weight = 3, form = "ray", color = {255, 157, 64}, scale = 1.7, gear = "diving"}
 table.insert(Catalog.SpeciesOrder, "sunRay")
-Catalog.Species.nightBoar={name="Moonlit Tusk Boar",habitat="meadow",rarity="Rare",tier=2,difficulty=0.60,value=240,points=150,weight=1,form="boar",color={93,69,88},scale=1.2,nightOnly=true,dangerous=true}
-Catalog.Species.nightPanther={name="Midnight Panther",habitat="jungle",rarity="Epic",tier=3,difficulty=0.68,value=480,points=300,weight=1,form="cat",color={52,59,91},scale=1.35,nightOnly=true,dangerous=true}
-Catalog.Species.nightShark={name="Nightfall Reef Shark",habitat="ocean",rarity="Legendary",tier=3,difficulty=0.72,value=850,points=540,weight=1,form="shark",color={70,87,115},scale=1.5,gear="snorkel",nightOnly=true,dangerous=true}
+Catalog.Species.nightBoar={name="Moonlit Tusk Boar",habitat="meadow",rarity="Rare",tier=2,difficulty=0.60,value=240,points=150,weight=1,form="boar",color={91,76,62},scale=1.2,nightOnly=true,dangerous=true}
+Catalog.Species.nightPanther={name="Midnight Panther",habitat="jungle",rarity="Epic",tier=3,difficulty=0.68,value=480,points=300,weight=1,form="panther",color={57,62,65},scale=1.35,nightOnly=true,dangerous=true}
+Catalog.Species.nightShark={name="Nightfall Reef Shark",habitat="ocean",rarity="Legendary",tier=3,difficulty=0.72,value=850,points=540,weight=1,form="reefShark",color={105,128,140},scale=1.5,gear="snorkel",nightOnly=true,dangerous=true}
 for _,id in {"nightBoar","nightPanther","nightShark"} do table.insert(Catalog.SpeciesOrder,id) end
 Catalog.NightHabitats={["ark:meadowCourt"]="nightBoar",["ark:canopyCourt"]="nightPanther",["ark:openSea"]="nightShark",["canopy:canopyMeadow"]="nightBoar",["canopy:canopyHall"]="nightPanther",["canopy:canopyCove"]="nightShark",["moonstone:moonstoneMeadow"]="nightBoar",["moonstone:moonstoneOrchid"]="nightPanther",["moonstone:moonstoneReefSecret"]="nightShark"} :: {[string]: string}
 Catalog.NightAttacks={nightBoar={damage=18,points=12,speed=13,alert=42},nightPanther={damage=28,points=20,speed=15,alert=46},nightShark={damage=30,points=24,speed=14,alert=42}} :: {[string]: any}
@@ -108,12 +108,13 @@ Catalog.Loot = {
 	{kind = "pointsTrap", weight = 10}, {kind = "deathTrap", weight = 5},
 }
 Catalog.Items.speedBoost = {name = "Expedition Sprint", price = 90, pointsPrice = 60, description = "One 45-second boost: run at 28 studs/s and swim faster. Activate from your field kit.", kind = "supply", category = "Boosts", stock = "speedBoost", quantity = 1}
+Catalog.Items.jumpBoost = {name = "Trail Leap", price = 110, pointsPrice = 75, description = "One 45-second jump boost: leap 16 studs to clear campus walls. Use Field Kit or key 6. Ends on respawn; does not unlock islands.", kind = "supply", category = "Boosts", stock = "jumpBoost", quantity = 1}
 Catalog.Items.animalTrap = {name = "Gentle Animal Snare", price = 120, pointsPrice = 80, description = "One humane ground trap. Holds an animal for 8 seconds; rescue gear requirements still apply.", kind = "supply", category = "Tracking", stock = "animalTrap", quantity = 1}
 Catalog.Items.tracker = {name = "Wildlife Scanner", price = 850, pointsPrice = 550, description = "Reveal nearby wildlife signals for 20 seconds. Works within 140 studs; 30-second cooldown.", kind = "access", category = "Tracking"}
 Catalog.Items.camoCoat = {name = "Ranger Camouflage", price = 550, pointsPrice = 360, description = "Approach nervous animals more closely before they flee. Automatically active when owned.", kind = "access", category = "Gear"}
 Catalog.Items.safariHat = {name = "Safari Explorer Hat", price = 240, pointsPrice = 160, description = "A sand-colored brimmed hat with a mint ranger band. Equip or remove in your field kit.", kind = "cosmetic", category = "Style", slot = "hat"}
 Catalog.Items.mintTrail = {name = "Aurora Footsteps", price = 380, pointsPrice = 250, description = "Leave a soft mint-and-gold trail behind your explorer. Purely cosmetic.", kind = "cosmetic", category = "Style", slot = "trail"}
-for _, id in {"speedBoost", "animalTrap", "tracker", "camoCoat", "safariHat", "mintTrail"} do table.insert(Catalog.ItemOrder, id) end
+for _, id in {"speedBoost", "jumpBoost", "animalTrap", "tracker", "camoCoat", "safariHat", "mintTrail"} do table.insert(Catalog.ItemOrder, id) end
 for _, item in Catalog.Items do
 	item.pointsPrice = item.pointsPrice or math.ceil(item.price * 0.65)
 	item.category = item.category or (if item.kind == "net" then "Rescue" elseif item.kind == "consumable" then "Boosts" else "Gear")

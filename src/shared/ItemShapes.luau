@@ -25,6 +25,12 @@ function Shapes.build(id: string, kind: string): {any}
 		add({0.2,3.8,0.2}, {0,-0.4,0}, tan)
 		for i = 1, 12 do local a = i * math.pi / 6; add({0.28,0.28,0.3}, {math.cos(a)*1.2,2+math.sin(a)*1.2,0}, if id == "expeditionNet" then gold else mint, "ball") end
 		for i = -2, 2 do add({0.06,2,0.06}, {i*0.35,2,0}, navy); add({2,0.06,0.06}, {0,2+i*0.35,0}, navy) end
+	elseif id == "jumpBoost" then
+		for _,x in {-0.75,0.75} do
+			add({1.1,1.1,1.7},{x,-0.6,-0.25},navy); add({1.2,0.3,1.9},{x,-1.2,-0.25},mint)
+			for i=1,3 do add({1,0.12,1.2},{x,-1.3-i*0.23,0},gold) end
+			add({0.7,1,0.9},{x,0.3,0.15},mint)
+		end
 	elseif id == "speedBoost" then
 		add({1.5,2.2,1.5}, {0,0,0}, mint, "ball"); add({0.8,0.5,0.8}, {0,1.2,0}, gold)
 		add({0.25,1.2,0.1}, {0,0,0.76}, gold); add({0.8,0.18,0.1}, {0,0,0.76}, gold)
