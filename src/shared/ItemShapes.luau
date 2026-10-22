@@ -28,10 +28,17 @@ function Shapes.build(id: string, kind: string): {any}
 	elseif id == "speedBoost" then
 		add({1.5,2.2,1.5}, {0,0,0}, mint, "ball"); add({0.8,0.5,0.8}, {0,1.2,0}, gold)
 		add({0.25,1.2,0.1}, {0,0,0.76}, gold); add({0.8,0.18,0.1}, {0,0,0.76}, gold)
-	elseif id == "animalTrap" then
+	elseif id=="flashlight" then
+		add({1,3.4,1},{0,0,0},navy); add({1.7,1.2,1.7},{0,1.8,0},gold)
+		add({1.4,0.18,1.4},{0,2.5,0},{255,245,183}); add({0.35,0.7,0.15},{0,0,-0.55},mint)
+	elseif id=="nightVision" then
+		add({3.6,0.4,1.7},{0,0,0},navy)
+		for _,x in {-0.9,0.9} do add({1.4,1.4,1.7},{x,0,-0.5},navy,"ball"); add({1,1,0.25},{x,0,-1.35},{102,255,134},"ball") end
+	elseif id == "animalTrap" or id=="predatorTrap" then
 		add({3.6,0.2,2.5}, {0,-0.9,0}, tan)
 		for _, x in {-1.5,1.5} do add({0.2,2.3,0.2}, {x,0,0}, mint) end
 		add({3.2,0.2,0.2}, {0,1.1,0}, mint); add({1.2,0.18,1.2}, {0,-0.65,0}, gold)
+		if id=="predatorTrap" then add({3.8,0.25,0.5},{0,-0.7,-1.25},{255,135,69}) end
 	elseif id == "tracker" then
 		add({2.4,3,0.65}, {0,0,0}, navy); add({1.9,1.9,0.1}, {0,0.3,-0.38}, mint)
 		add({0.15,1.2,0.15}, {0.8,2,0}, tan); add({0.3,0.3,0.15}, {0,-0.95,-0.4}, gold, "ball")

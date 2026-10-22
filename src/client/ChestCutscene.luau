@@ -9,6 +9,7 @@ local AnimalShapes=require(Shared.AnimalShapes)
 local ItemShapes=require(Shared.ItemShapes)
 local Plans=require(Shared.ChestSceneRules)
 local Cutscene={}; Cutscene.__index=Cutscene
+local RewardAudio=require(script.Parent.RewardAudio)
 local colors={Color3.fromRGB(48,244,190),Color3.fromRGB(255,210,49),Color3.fromRGB(97,174,255),Color3.fromRGB(216,113,255)}
 local function make(class,properties,parent)
 	local item=Instance.new(class); for key,value in properties do item[key]=value end; item.Parent=parent; return item
@@ -97,6 +98,7 @@ function Cutscene.new(player,onActive)
 end
 function Cutscene:finish(scene)
 	if self.active~=scene then return end
+	if not scene.data.trap and not scene.chimed then scene.chimed=true; RewardAudio.play() end
 	self.active=nil
 	RunService:UnbindFromRenderStep(scene.binding)
 	for _,connection in scene.connections do connection:Disconnect() end
@@ -146,6 +148,7 @@ function Cutscene:frame(scene)
 	scene.progress.Size=UDim2.fromScale(math.clamp(elapsed/plan.duration,0,1),1)
 	if elapsed>=plan.revealAt and not scene.revealed then
 		scene.revealed=true
+		if not scene.data.trap and not scene.chimed then scene.chimed=true; RewardAudio.play() end
 		for p,transparency in scene.rewardVisibility do p.Transparency=transparency end
 		scene.title.Text=if scene.data.trap then "TRAP REVEALED!" elseif plan.rank>=5 then "LEGENDARY DISCOVERY!" elseif plan.rank>=3 then "SPECIAL DISCOVERY!" else "TREASURE REVEALED!"
 		scene.caption.Text=scene.data.title or "Your chest reward"

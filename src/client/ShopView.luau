@@ -73,6 +73,18 @@ function ShopView.render(ctx)
 end
 function ShopView.kit(ctx)
 	local s,p=ctx.state,ctx.palette
+	local night=ctx.card(112)
+	ctx.text(night,"NIGHT EXPEDITION KIT",16,p.gold,UDim2.fromOffset(14,8),UDim2.new(1,-28,0,25),true)
+	ctx.text(night,"F: flashlight • V: night vision • 4: sedate nearest predator • 5: reinforced snare. Night catches pay 2×; dangerous catches pay 3×.",12,p.muted,UDim2.fromOffset(14,37),UDim2.new(1,-28,0,65))
+	for _,id in {"flashlight","nightVision","tranquilizer","predatorTrap"} do
+		local item=Catalog.Items[id]; local f=ctx.card(198); preview(f,id,item.kind,ctx.make)
+		local count=if item.stock then s.profile.stock[id] or 0 else (if s.profile.owned[id] then 1 else 0)
+		local kit=s.kit or {}; local reserve=kit.flashlight or 0
+		ctx.text(f,item.name,16,p.cream,UDim2.fromOffset(108,9),UDim2.new(1,-120,0,42),true)
+		ctx.text(f,item.description,12,p.muted,UDim2.fromOffset(108,50),UDim2.new(1,-120,0,88))
+		local label=if id=="flashlight" then (if kit.flashlightOn then "Switch off" else "Switch on").." • "..math.ceil(reserve).."s / "..count.." cells" elseif id=="nightVision" then (if kit.nightVision then "Disable vision" else "Enable vision") elseif id=="tranquilizer" then "Sedate nearest threat" else "Place snare • "..count
+		ctx.button(f,label,UDim2.new(0,12,1,-46),UDim2.new(1,-24,0,34),function() ctx.send("use",id) end,count<=0 and not (id=="flashlight" and reserve>0))
+	end
 	for _, id in {"speedBoost","animalTrap","tracker"} do
 		local item=Catalog.Items[id]; local f=ctx.card(174); preview(f,id,item.kind,ctx.make)
 		local count=if item.stock then s.profile.stock[id] or 0 else (if s.profile.owned[id] then 1 else 0)

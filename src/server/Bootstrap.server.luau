@@ -45,6 +45,8 @@ musicRemote.OnServerInvoke=function(player,style)
 end
 Players.PlayerRemoving:Connect(function(player) musicRequests[player]=nil end)
 local world = World.build(Config)
+local cycle=require(script.Parent.DayNight).new(world,Config)
+cycle:start()
 local sessions, positions, buckets, captureTimes, loading = {}, {}, {}, {}, {}
 local waterSafety, fieldKit, commerce, travel
 local closing = false
@@ -81,6 +83,9 @@ end
 local function getProfile(player)
 	local session=sessions[player]
 	return if session and not session.lost and not session.closed and not closing then session.data else nil
+end
+cycle.onChange=function(state)
+	for player in sessions do push(player,if state.night then "Nightfall! Captures pay 2×; restrained predators pay 3×. Prepare night gear or rest safely at the Ark/checkpoints." else "Dawn has arrived. Night predators retreat; daytime capture rewards return.","info") end
 end
 fieldKit = FieldKit.new(world,Config,Catalog,Rules,getProfile,push,effects)
 commerce = require(script.Parent.Commerce).new(Catalog,Rules,Store,function(player) return if not closing then sessions[player] else nil end,push)
@@ -198,9 +203,10 @@ local function capture(player, animal)
 		return false
 	end
 	if (animal.flightHeight or 0)>2 then push(player,"Wait for the bird to land.","info"); return false end
-	local condition=EncounterRules.condition(now,animal.fleeUntil,animal.snaredUntil)
+	local condition=if Catalog.Species[animal.id].dangerous and now<(animal.dangerRestraintUntil or 0) then "controlled" else EncounterRules.condition(now,animal.fleeUntil,animal.snaredUntil)
 	local eligible=Rules.chance(session.data,animal.id,condition)~=nil
-	local captured, message = Rules.attempt(session.data, animal.id, Random.new():NextNumber(), os.time(), preview, animal.zone.mapId,condition)
+	local captured, message = Rules.attempt(session.data, animal.id, Random.new():NextNumber(), os.time(), preview, animal.zone.mapId,condition,cycle:state().night)
+	if captured then effects:FireClient(player,{kind="captureReward"}) end
 	push(player, message, if captured then "success" else "info")
 	return captured, eligible and not captured
 end
@@ -303,9 +309,10 @@ end)
 World.startBoats(world, boatInput)
 waterSafety:start()
 travel:start()
+local hazards=require(script.Parent.NightHazards).new(world,Catalog,Config,getProfile,push,cycle)
 local wildlife=Wildlife.new(world, Catalog, Rules, capture, preview, function(player)
 	local p=getProfile(player); return p and p.owned
-end)
+end,cycle,hazards)
 wildlife:start()
 fieldKit:start(wildlife)
 workspace:SetAttribute("ZoReady", true)

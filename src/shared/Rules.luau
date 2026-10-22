@@ -32,7 +32,7 @@ function Rules.new(catalog: any, config: any)
 	function api.blank(now: number): Profile
 		return {
 			coins = config.StartingCoins, points = 0, inventory = {}, owned = {}, discovered = {}, titles = {}, bait = 0,
-			stock = {speedBoost = 0, animalTrap = 0, teleportPass = 0}, wardrobe = {}, receipts = {}, maps = {ark = true},
+			stock = {speedBoost = 0, animalTrap = 0, teleportPass = 0,flashlight=0,predatorTrap=0}, wardrobe = {}, receipts = {}, maps = {ark = true},
 			stats = {catches = 0, rare = 0, distance = 0, traded = 0, walkDistance = 0, swimDistance = 0},
 			daily = {day = math.floor(now / 86400), catches = 0, rare = 0, distance = 0, claimed = {}},
 			event = {id = -2, captures = 0, claimed = false},
@@ -133,19 +133,21 @@ function Rules.new(catalog: any, config: any)
 	function api.chance(p: Profile, id: string, condition: string?): (number?, string?)
 		local animal = catalog.Species[id]
 		if not animal then return nil, "Unknown animal." end
+		if animal.dangerous and condition~="controlled" then return nil,"Sedate this predator with your tranquilizer (Field Kit/4), or lure it into a Predator Rescue Snare first." end
 		if api.count(p) >= api.capacity(p) then return nil, "Your pack is full. Trade at the Ark." end
 		local tier = api.tier(p)
 		if tier < animal.tier then return nil, "This animal needs Tier " .. animal.tier .. " rescue gear." end
 		if animal.gear and not p.owned[animal.gear] and not (animal.gear == "snorkel" and p.owned.diving) then
 			return nil, "Buy the " .. catalog.Items[animal.gear].name .. " at the Ark first."
 		end
-		local adjustment = if condition == "snared" then 0.22 elseif condition == "fleeing" then -0.14 else 0
+		local adjustment = if condition == "snared" or condition=="controlled" then 0.22 elseif condition == "fleeing" then -0.14 else 0
 		return math.clamp(config.CaptureBase - animal.difficulty * config.CaptureDifficulty + (tier - 1) * config.CaptureTierBonus + (if p.bait > 0 then 0.15 else 0) + adjustment, config.CaptureMinimum, config.CaptureMaximum), nil
 	end
-	function api.attempt(p: Profile, id: string, roll: number, now: number, preview: boolean?, mapId: string?, condition: string?): (boolean, string)
+	function api.attempt(p: Profile, id: string, roll: number, now: number, preview: boolean?, mapId: string?, condition: string?, atNight: boolean?): (boolean, string)
 		if type(roll) ~= "number" or roll ~= roll or roll < 0 or roll >= 1 then return false, "Invalid capture roll." end
 		local animal = catalog.Species[id]
 		if not animal then return false, "Unknown animal." end
+		if animal.nightOnly and atNight~=true then return false,"Night predators retreat at dawn." end
 		local event = api.eventWindow(now, preview)
 		if animal.eventOnly and not event.active then return false, "The Aurora Tide event has ended." end
 		if animal.eventOnly and p.event.id == event.id and p.event.captures >= config.EventGoal then return false, "You rescued this tide's three mantas! Claim your prize on the expedition board." end
@@ -153,7 +155,7 @@ function Rules.new(catalog: any, config: any)
 		if not chance then return false, reason or "Unable to capture." end
 		api.refresh(p, now)
 		if p.bait > 0 then p.bait -= 1 end
-		if roll >= chance then return false, if condition=="snared" then "The animal resisted! Your snare is still holding it; try again." else "Missed! Follow the animal and try again." end
+		if roll >= chance then return false, if condition=="snared" then "The animal resisted! Your snare is still holding it; try again." elseif condition=="controlled" then "The predator resisted! It is still restrained; try again before the effect expires." else "Missed! Follow the animal and try again." end
 		p.inventory[id] = (p.inventory[id] or 0) + 1
 		p.discovered[id] = true
 		p.stats.catches += 1
@@ -162,14 +164,16 @@ function Rules.new(catalog: any, config: any)
 		p.exploration.catches[region] = (p.exploration.catches[region] or 0) + 1
 		if catalog.Rarities[animal.rarity].rank >= 3 then p.exploration.rareCatches[region] = (p.exploration.rareCatches[region] or 0) + 1 end
 		if catalog.Rarities[animal.rarity].rank >= 3 then p.stats.rare += 1; p.daily.rare += 1 end
-		local coins = math.max(1, math.floor(animal.value * 0.2))
+		local multiplier=if atNight then (if animal.dangerous then config.DangerousNightMultiplier else config.NightCaptureMultiplier) else 1
+		local coins = math.max(1, math.floor(animal.value * 0.2))*multiplier
+		local points=animal.points*multiplier
 		p.coins += coins
-		p.points += animal.points
+		p.points += points
 		if animal.eventOnly then
 			if p.event.id ~= event.id then p.event = {id = event.id, captures = 0, claimed = false} end
 			p.event.captures += 1
 		end
-		return true, "Collected " .. animal.name .. "! +" .. coins .. " coins • +" .. animal.points .. " Ark Points"
+		return true, "Collected " .. animal.name .. "! +" .. coins .. " coins • +" .. points .. " Ark Points"..(if multiplier>1 then " • "..multiplier.."× night reward!" else "")
 	end
 	function api.buy(p: Profile, id: string, currency: string?): (boolean, string)
 		local item = catalog.Items[id]
@@ -289,7 +293,7 @@ function Rules.new(catalog: any, config: any)
 			local pool = {}
 			for _, speciesId in catalog.SpeciesOrder do
 				local animal = catalog.Species[speciesId]
-				if not animal.eventOnly and (chest.obscure or catalog.Rarities[animal.rarity].rank < 3) then table.insert(pool, speciesId) end
+				if not animal.eventOnly and not animal.nightOnly and (chest.obscure or catalog.Rarities[animal.rarity].rank < 3) then table.insert(pool, speciesId) end
 			end
 			local speciesId = pool[math.floor(choice * #pool) + 1]
 			local animal = catalog.Species[speciesId]; result.animal = speciesId

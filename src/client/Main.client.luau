@@ -2,6 +2,8 @@
 local ChestCutscene = require(script.Parent.ChestCutscene)
 local MusicPlayer = require(script.Parent.MusicPlayer)
 local MusicView = require(script.Parent.MusicView)
+local RewardAudio=require(script.Parent.RewardAudio)
+local NightGear=require(script.Parent.NightGear)
 local GuiService = game:GetService("GuiService")
 local CurrencyHUD = require(script.Parent.CurrencyHUD)
 local TravelView = require(script.Parent.TravelView)
@@ -15,6 +17,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local Shared = ReplicatedStorage:WaitForChild("ZoShared")
 local Catalog = require(Shared.Catalog)
+local NightRules=require(Shared.NightRules)
 local Config = require(Shared.Config)
 local Layout = require(Shared.MapLayout)
 local Islands = require(Shared.IslandLayouts)
@@ -309,6 +312,7 @@ local function guide()
 	section("03  /  Prepare an expedition", "Buy the Ranger Net for larger animals. A Reef Snorkel opens more sea encounters. Rescue and water gear are automatic. Buy with coins or points; open Field Kit to activate supplies and equip cosmetics.", 126)
 	section("04  /  Sail beyond the base", if hybrid then "Tidewater Hall is in the northeast. Descend the boarding steps in its southern pool to reach a free boat, then sail through the eastern sea gate. Swim or sail close to marine animals." else "Find your world's expedition dock and borrow a free boat. Sit to steer and jump to leave. Swim or sail close to marine animals to rescue them.", 148)
 	section("05  /  Follow the Aurora Tide", "An eight-minute event returns every thirty minutes. Rescue three Aurora Mantas at the reef, then claim a special title and bonus rewards on the expedition board.", 126)
+	section("06  /  After dark", "The sky cycles through 8 minutes of day and 4 minutes of night. Night capture coins/points pay 2×; night predators pay 3×. Watch for boars, panthers and sharks! Buy flashlight cells (F), night vision (V), a tranquilizer (4) or a 3-minute Predator Rescue Snare (5). Sedate or restrain predators before rescuing them. The Ark and checkpoints are safe resting areas.", 204)
 	local checkpoint = Catalog.Checkpoints[state.respawnCheckpoint]
 	section("Island access & checkpoints", "Open Travel to unlock Canopy Reach or Moonstone Isle with coins, points or configured Robux offers. Then sail there or buy a teleport. Activate checkpoints to save your respawn, then finish island challenges on the expedition board. Current respawn: " .. (if checkpoint then checkpoint.name else "Ark southern entrance") .. ".", 155)
 	section("Surprise chests", "Each chest is free to open once per explorer per UTC day. Find coins, hidden animals, gear, sprint boosts or snares; some chests trap you, remove points or kill your character. Death returns you to your checkpoint. Your collected animals and gear stay.", 160)
@@ -377,6 +381,7 @@ local function resize()
 	local compact = viewport.X < 560
 	local extraNav=if compact then 40 else 0
 	tide.Visible = not short
+	tideText.TextSize=if compact then 10 else 12
 	panel.Position = UDim2.new(0.5, 0, 0, if short then 76 else 122)
 	panel.Size = UDim2.fromOffset(math.min(690, viewport.X - 24), math.max(110, math.min(530, viewport.Y - (if short then 144 else 288)-extraNav)))
 	nav.Size = UDim2.fromOffset(math.min(730, viewport.X - 24), 48+extraNav)
@@ -413,6 +418,8 @@ music=MusicPlayer.new(remotes:WaitForChild("MusicPlaylist"),function()
 	if currentPage=="music" then render() end
 end)
 script.Destroying:Connect(function() music:destroy() end)
+local stopNightGear=NightGear.start(player)
+script.Destroying:Connect(stopNightGear)
 send = function(verb, id, amount, currency)
 	if requestBusy then return end
 	requestBusy = true
@@ -464,7 +471,7 @@ end
 for _,instance in workspace:GetDescendants() do watchMerchandise(instance) end
 workspace.DescendantAdded:Connect(function(instance) if instance:IsA("ClickDetector") then task.defer(watchMerchandise,instance) end end)
 remotes:WaitForChild("Effects").OnClientEvent:Connect(function(data)
-	if data.kind=="chest" then cutscene:play(data) elseif data.kind=="scan" then ChestEffects.scan(data) end
+	if data.kind=="chest" then cutscene:play(data) elseif data.kind=="scan" then ChestEffects.scan(data) elseif data.kind=="captureReward" then RewardAudio.play() end
 end)
 remotes:WaitForChild("Changed").OnClientEvent:Connect(function(update)
 	if update.state then state = update.state; state.receivedAt = os.clock() end
@@ -489,6 +496,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if panel.Visible and (input.KeyCode==Enum.KeyCode.Escape or input.KeyCode==Enum.KeyCode.ButtonB) then closeNotebook(); return end
 	if processed then return end
 	local kitKeys={[Enum.KeyCode.One]="speedBoost",[Enum.KeyCode.Two]="animalTrap",[Enum.KeyCode.Three]="tracker"}
+	kitKeys[Enum.KeyCode.Four]="tranquilizer"; kitKeys[Enum.KeyCode.Five]="predatorTrap"; kitKeys[Enum.KeyCode.F]="flashlight"; kitKeys[Enum.KeyCode.V]="nightVision"
 	if kitKeys[input.KeyCode] then send("use",kitKeys[input.KeyCode]); return end
 	local page = hotkeys[input.KeyCode]
 	if page then if panel.Visible and currentPage == page then closeNotebook() else open(page) end end
@@ -508,8 +516,18 @@ RunService.RenderStepped:Connect(function(dt)
 	elapsed += dt; if elapsed < 0.2 then return end; elapsed = 0
 	if state then
 		local remaining = state.event.remaining - (os.clock() - state.receivedAt)
-		tideText.Text = if state.event.active then "AURORA TIDE  •  Mantas in the reef lagoon  •  " .. clock(remaining) .. " remaining" else "NEXT AURORA TIDE  •  " .. clock(remaining) .. "  •  Rare encounters. Special rewards."
-		tideText.TextColor3 = if state.event.active then palette.mint else palette.muted
+		local epoch=workspace:GetAttribute("ZoDayEpoch")
+		local day=NightRules.cycle(if epoch then workspace:GetServerTimeNow()-epoch else Config.CycleStartPhase,Config)
+		local hour=math.floor(day.hour); local minute=math.floor((day.hour-hour)*60)
+		local compact=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X<560
+		local time=string.format("%02d:%02d",hour,minute)
+		local bonus=NightRules.multiplier(day.night,false,Config); local dangerousBonus=NightRules.multiplier(day.night,true,Config)
+		local caption=if compact then (if day.night then "NIGHT "..time.." • "..bonus.."×/"..dangerousBonus.."×\nDawn "..clock(day.remaining) else "DAY "..time.."\nNight in "..clock(day.remaining)) else (if day.night then "NIGHT "..time.." • "..bonus.."× catches / predators "..dangerousBonus.."× • Dawn "..clock(day.remaining) else "DAY "..time.." • Night in "..clock(day.remaining))
+		local character=player.Character
+		if character and character:GetAttribute("ZoFlashlightOn") then caption..=" • F "..(character:GetAttribute("ZoFlashlightRemaining") or 0).."s"
+		elseif character and character:GetAttribute("ZoNightVisionOn") then caption..=" • NV ON"
+		elseif not compact then caption..=if state.event.active then "  |  AURORA TIDE "..clock(remaining) else "  |  Next tide "..clock(remaining) end
+		tideText.Text=caption; tideText.TextColor3=if day.night then palette.gold else palette.mint
 	end
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local character = player.Character

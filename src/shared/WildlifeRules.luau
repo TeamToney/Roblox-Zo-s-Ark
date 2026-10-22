@@ -4,7 +4,7 @@ function WildlifeRules.canVisit(species: any, zone: any, target: any): boolean
 	return (species.rarity == "Common" or species.rarity == "Uncommon") and not zone.obscure and not zone.marine and target.mapId == zone.mapId and target.width >= species.scale * 9 + 0.5
 end
 function WildlifeRules.eligible(_catalog: any, species: any, zone: any): boolean
-	if species.eventOnly then return false end
+	if species.eventOnly or species.nightOnly then return false end
 	local marine = zone.habitat == "reef" or zone.habitat == "ocean"
 	return species.habitat == zone.habitat or (marine and (species.form == "turtle" or species.form == "ray"))
 end

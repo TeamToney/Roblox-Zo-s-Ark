@@ -2,7 +2,7 @@
 
 Explore an Ark sanctuary campus, outdoor habitats and the surrounding sea. Collect wildlife with nonlethal rescue gear and grow a field journal. Return to the Ark Atrium to trade animals into the sanctuary, buy equipment, and prepare for rarer encounters.
 
-This playable prototype adapts all **three uploaded floor plans** into the Ark Sanctuary, Canopy Reach and Moonstone Isle, combining their building layouts with outdoor biomes and open-sea exploration. It includes 27 animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily and island challenges, checkpoint respawns, surprise chests, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use original procedural art. Player-to-player trading is not implemented. Guaranteed Robux bundles have receipt handling, but remain unavailable until the experience owner configures Developer Products; see [Robux setup](docs/ROBUX_SETUP.md).
+This playable prototype adapts all **three uploaded floor plans** into the Ark Sanctuary, Canopy Reach and Moonstone Isle, combining their building layouts with outdoor biomes and open-sea exploration. It includes 30 animal species, rarity and equipment gates, a coin/Ark Point economy, a collection journal, sanctuary trading, a gear store, boats, daily and island challenges, checkpoint respawns, surprise chests, Aurora Tide events, and a session-locked saving adapter. Architecture and animals use original procedural art. Player-to-player trading is not implemented. Guaranteed Robux bundles have receipt handling, but remain unavailable until the experience owner configures Developer Products; see [Robux setup](docs/ROBUX_SETUP.md).
 
 The water-survival update adds solid island foundations down to the seabed, four marked shore stairways, swim endurance, recovery pickups, and bonuses for walking and swimming. Animals now have species-specific silhouettes, coat patterns, shells, fins and feathers, with animated limbs, wings and tails made from original Roblox primitives.
 
@@ -71,6 +71,25 @@ Teleports require an unlocked destination and a living, unseated explorer. There
 Base per-spawn rarity budgets, when matching species exist: Ark **1.5% Rare / 0.5% Epic / 0.08% Legendary**; Canopy **5% / 1.8% / 0.4%**; Moonstone **7.5% / 3% / 0.8%**. Hidden habitats multiply them by 1.8 and open seaways by 1.2. Missing rarity budgets return to common wildlife. These are spawn probabilities, not guarantees or capture odds. Five added sea routes target 15 additional animals; the new Legendary Sunburst Ray can appear in reefs and seaways. The archipelago targets 96 ordinary animals plus 2 event mantas.
 
 Click/tap a shelf item or its price tag to open that selected product. Store preview models are selectable too. The purchase card offers coins or points; it does not charge merely for selecting an item. Close any notebook panel with ×, Escape, controller Back or a click outside it. Closing works locally while a server request is pending, and a late inspection response cannot reopen it.
+
+### Day, night and dangerous wildlife
+
+A full cycle lasts **12 real minutes: 8 minutes of day, 4 minutes of night**. Servers start at noon, so the first night begins about four minutes after startup. The banner shows world time and the next dawn/nightfall. Lighting changes gradually. Every successful animal capture plays a two-note cash-register-style chime; positive chest finds ring at their cutscene reveal, or once when skipped. Trap chests and failed attempts stay silent. Music muting does not mute reward sounds.
+
+Night captures award **2× the normal capture coins and Ark Points**. Dangerous night predators pay **3× their base capture rewards**. This affects the catch stipend/discovery points; sanctuary sale prices, chest prizes and challenge rewards retain their normal values. Each catch counts as one animal for quests and event quotas.
+
+Moonlit Tusk Boars, Midnight Panthers and Nightfall Reef Sharks emerge in nine designated habitats, three per island. Each habitat can spawn one predator per night, with no replacement until the next night; dawn removes survivors. Their red danger labels identify them. They pursue nearby explorers, warn for 1.1 seconds before striking, and remove health plus 12/20/24 points per hit. Damage can kill; points never go below zero. Spawn/Ark areas and checkpoints are safe resting places; new characters get 15 seconds of protection. Walls block attacks, seated explorers are safe, and sharks target swimmers. Predators stay near their habitat.
+
+Buy night equipment at Outfitters with either currency:
+
+| Equipment | Coins | Ark Points | Use |
+| --- | ---: | ---: | --- |
+| Field Flashlight Cell | 75 | 50 | **F** / Field Kit; 120 seconds of beam time, pause by switching off |
+| Night Vision Goggles | 950 | 620 | **V** / Field Kit; permanent skill, active after dark, no battery |
+| Predator Rescue Snare | 180 | 120 | **5** / Field Kit; one ground trap, waits 3 minutes and holds one land predator up to 3 minutes |
+| Rescue Tranquilizer | 1,800 | 1,170 | Existing Tier 4 upgrade; **4** / Field Kit sedates the nearest visible predator within 35 studs for 45 seconds, 12-second cooldown |
+
+Predators **must actually be sedated or caught in a Predator Rescue Snare before capture**. Merely owning a tranquilizer, or using a Gentle Animal Snare, does not qualify. Normal rescue-tier, water-gear and pack-capacity requirements still apply. Use the tranquilizer for sharks; reinforced traps are land-only. Unused cells/snares and night-vision ownership persist; current flashlight charge and toggles reset at respawn. See [night testing](docs/TESTING.md) for the optional Studio preview and unexecuted engine checks.
 
 ### Outdoor forests
 

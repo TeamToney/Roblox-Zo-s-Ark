@@ -2,7 +2,7 @@
 export type Species = {
 	name: string, habitat: string, rarity: string, tier: number,
 	difficulty: number, value: number, points: number, weight: number,
-	form: string, color: {number}, scale: number, gear: string?, eventOnly: boolean?, pattern: string?,
+	form: string, color: {number}, scale: number, gear: string?, eventOnly: boolean?, pattern: string?, nightOnly: boolean?, dangerous: boolean?,
 }
 export type Item = {
 	name: string, price: number, description: string,
@@ -55,6 +55,12 @@ Catalog.Species = {
 Catalog.SpeciesOrder = {"rabbit", "fox", "deer", "monkey", "parrot", "jaguar", "goat", "eagle", "snowLeopard", "reefFish", "seaTurtle", "dolphin", "whale", "auroraRay", "capybara", "raccoon", "boar", "redPanda", "peacock", "tiger", "ibex", "arcticFox", "mackerel", "seal", "hammerhead", "axolotl"}
 Catalog.Species.sunRay = {name = "Sunburst Ray", habitat = "reef", rarity = "Legendary", tier = 4, difficulty = 0.70, value = 1350, points = 850, weight = 3, form = "ray", color = {255, 157, 64}, scale = 1.7, gear = "diving"}
 table.insert(Catalog.SpeciesOrder, "sunRay")
+Catalog.Species.nightBoar={name="Moonlit Tusk Boar",habitat="meadow",rarity="Rare",tier=2,difficulty=0.60,value=240,points=150,weight=1,form="boar",color={93,69,88},scale=1.2,nightOnly=true,dangerous=true}
+Catalog.Species.nightPanther={name="Midnight Panther",habitat="jungle",rarity="Epic",tier=3,difficulty=0.68,value=480,points=300,weight=1,form="cat",color={52,59,91},scale=1.35,nightOnly=true,dangerous=true}
+Catalog.Species.nightShark={name="Nightfall Reef Shark",habitat="ocean",rarity="Legendary",tier=3,difficulty=0.72,value=850,points=540,weight=1,form="shark",color={70,87,115},scale=1.5,gear="snorkel",nightOnly=true,dangerous=true}
+for _,id in {"nightBoar","nightPanther","nightShark"} do table.insert(Catalog.SpeciesOrder,id) end
+Catalog.NightHabitats={["ark:meadowCourt"]="nightBoar",["ark:canopyCourt"]="nightPanther",["ark:openSea"]="nightShark",["canopy:canopyMeadow"]="nightBoar",["canopy:canopyHall"]="nightPanther",["canopy:canopyCove"]="nightShark",["moonstone:moonstoneMeadow"]="nightBoar",["moonstone:moonstoneOrchid"]="nightPanther",["moonstone:moonstoneReefSecret"]="nightShark"} :: {[string]: string}
+Catalog.NightAttacks={nightBoar={damage=18,points=12,speed=13,alert=42},nightPanther={damage=28,points=20,speed=15,alert=46},nightShark={damage=30,points=24,speed=14,alert=42}} :: {[string]: any}
 for _, species in Catalog.Species do
 	local average=(species.color[1]+species.color[2]+species.color[3])/3
 	for channel,value in species.color do species.color[channel]=math.clamp(math.floor(average+(value-average)*1.16),0,255) end
@@ -114,7 +120,12 @@ for _, item in Catalog.Items do
 end
 Catalog.Items.teleportPass = {name = "Teleport Pass", price = 80, pointsPrice = 50, description = "One teleport to an unlocked island. Use Travel to choose your destination. Island access is sold separately.", kind = "supply", category = "Travel", stock = "teleportPass", quantity = 1}
 table.insert(Catalog.ItemOrder, "teleportPass")
-Catalog.Categories = {"All", "Rescue", "Gear", "Tracking", "Boosts", "Style", "Travel"}
+Catalog.Items.flashlight={name="Field Flashlight Cell",price=75,pointsPrice=50,description="120 seconds of beam time. Toggle in Field Kit/F; switching off saves the remaining battery until respawn.",kind="supply",category="Night Gear",stock="flashlight",quantity=1}
+Catalog.Items.nightVision={name="Night Vision Goggles",price=950,pointsPrice=620,description="Permanent night-vision skill. Toggle with Field Kit/V; illuminates nearby night scenery without battery use.",kind="access",category="Night Gear"}
+Catalog.Items.predatorTrap={name="Predator Rescue Snare",price=180,pointsPrice=120,description="One reinforced land snare. Waits 3 minutes and holds one predator for 3 minutes. Required rescue tier still applies.",kind="supply",category="Night Gear",stock="predatorTrap",quantity=1}
+Catalog.Items.tranquilizer.description="Tier 4 rescue gear. Field Kit/key 4 sedates a visible nearby predator for 45s, with a 12s cooldown. Works at sea."
+for _,id in {"flashlight","nightVision","predatorTrap"} do table.insert(Catalog.ItemOrder,id) end
+Catalog.Categories = {"All", "Rescue", "Gear", "Tracking", "Boosts", "Style", "Travel", "Night Gear"}
 -- Guaranteed products only; IDs are configured in Monetization.luau.
 Catalog.Products = {
 	sprintPack = {category = "Boosts", name = "3 Expedition Sprints", description = "Three 45-second sprint boosts, ready to activate in your Field Kit.", stock = "speedBoost", quantity = 3},

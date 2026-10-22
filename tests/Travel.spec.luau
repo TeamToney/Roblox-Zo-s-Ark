@@ -111,7 +111,7 @@ test("moderate capture odds preserve starter success and give rare gear and bait
 	local tiger=Rules.chance(p,"tiger") :: number; assert(tiger>0.35 and tiger<0.45)
 	p.bait=1; local improved=Rules.chance(p,"tiger") :: number; assert(improved>tiger and improved<0.7)
 	for _,id in Catalog.SpeciesOrder do
-		p.owned.diving=true; local chance=Rules.chance(p,id,"snared") :: number
+		p.owned.diving=true; local chance=Rules.chance(p,id,if Catalog.Species[id].dangerous then "controlled" else "snared") :: number
 		assert(chance>=Config.CaptureMinimum and chance<=0.9)
 	end
 end)

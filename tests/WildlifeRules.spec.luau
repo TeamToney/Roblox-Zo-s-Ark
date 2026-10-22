@@ -22,7 +22,7 @@ test("every ordinary species has at least one eligible authored habitat", functi
 	local plans: {any} = {Layout}; for _, plan in Islands.Islands do table.insert(plans, plan) end
 	for _, id in Catalog.SpeciesOrder do
 		local species = Catalog.Species[id]
-		if species.eventOnly then continue end
+		if species.eventOnly or species.nightOnly then continue end
 		local found = false
 		for _, plan in plans do for _, zone in plan.Zones do if Wildlife.eligible(Catalog, species, zone) then found = true end end end
 		assert(found, id .. " has no spawn habitat")

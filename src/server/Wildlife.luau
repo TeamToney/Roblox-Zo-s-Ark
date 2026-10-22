@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local EncounterRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EncounterRules)
 local EscapeRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EscapeRules)
+local NightRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").NightRules)
 local RunService = game:GetService("RunService")
 local World = require(script.Parent.World)
 local AnimalModels = require(script.Parent.AnimalModels)
@@ -10,8 +11,8 @@ local WildlifeRules = require(game:GetService("ReplicatedStorage"):WaitForChild(
 local Wildlife = {}
 Wildlife.__index = Wildlife
 
-function Wildlife.new(world, catalog, rules, onCapture, preview, getOwned)
-	return setmetatable({world = world, catalog = catalog, rules = rules, onCapture = onCapture, preview = preview, random = Random.new(), records = {}, routing = 0, getOwned = getOwned}, Wildlife)
+function Wildlife.new(world, catalog, rules, onCapture, preview, getOwned, cycle, hazards)
+	return setmetatable({world = world, catalog = catalog, rules = rules, onCapture = onCapture, preview = preview, random = Random.new(), records = {}, routing = 0, getOwned = getOwned,cycle=cycle,hazards=hazards,nightSpawns={}}, Wildlife)
 end
 
 function Wildlife:choose(zone)
@@ -31,11 +32,15 @@ function Wildlife:spawn(zone, id)
 	local rig = AnimalModels.build(self.world, model, root, species)
 	local title = self.world.label(root, species.name .. "\n" .. species.rarity .. " • Tier " .. species.tier, 4 * scale, 240)
 	title.TextColor3 = Color3.fromRGB(unpack(self.catalog.Rarities[species.rarity].color))
+	if species.dangerous then
+		title.Text=species.name.."\nDANGER • restrain before rescue"; title.TextColor3=Color3.fromRGB(255,105,112)
+		local outline=Instance.new("Highlight"); outline.FillTransparency=1; outline.OutlineColor=Color3.fromRGB(255,90,105); outline.DepthMode=Enum.HighlightDepthMode.Occluded; outline.Parent=model
+	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Rescue animal"; prompt.ObjectText = species.name .. " • " .. species.rarity
 	prompt.MaxActivationDistance = 12; prompt.HoldDuration = EncounterRules.holdTime(self.world.config.CaptureHold,self.catalog.Rarities[species.rarity].rank)
 	prompt.RequiresLineOfSight = true; prompt.Parent = root
-	model:SetAttribute("SpeciesId", id); model.Parent = self.world.actors
+	model:SetAttribute("SpeciesId", id); model:SetAttribute("Dangerous",species.dangerous==true); model.Parent = self.world.actors
 	local record = {behavior=EscapeRules.behavior(self.catalog,id,zone.marine), routeVersion=0, nextEscapePlan=0, holds = {}, retryUntil = 0, prompt = prompt, fleeUntil = 0, fleeStarted = 0, restUntil = 0, snaredUntil = 0, flightHeight = 0, model = model, root = root, rig = rig, zone = zone, id = id, alive = true, busy = false, position = root.Position, path = {}, waypoint = 1, nextMove = os.clock() + self.random:NextNumber(3, 7), yaw = self.random:NextNumber(0, math.pi * 2)}
 	self.records[model] = record
 	prompt.PromptButtonHoldBegan:Connect(function(player)
@@ -61,6 +66,7 @@ function Wildlife:spawn(zone, id)
 			if body then self:flee(record, body.Position, player) end
 		end
 	end)
+	return record
 end
 
 function Wildlife:planMove(record)
@@ -94,7 +100,7 @@ function Wildlife:planMove(record)
 	end
 end
 
-function Wildlife:escapePoint(record, threat)
+function Wildlife:escapePoint(record, threat, goal)
 	local species=self.catalog.Species[record.id]
 	local scale=species.scale
 	local params=World.wildlifeParams(self.world)
@@ -105,8 +111,14 @@ function Wildlife:escapePoint(record, threat)
 		if bounds then return point.X>=bounds.minX+margin and point.X<=bounds.maxX-margin and point.Z>=bounds.minZ+margin and point.Z<=bounds.maxZ-margin end
 		return Vector2.new(point.X-record.zone.center.X,point.Z-record.zone.center.Z).Magnitude<=record.zone.radius-margin
 	end
-	local chosen=EscapeRules.choose(EscapeRules.probes(record.position.X,record.position.Z,threat.X,threat.Z,record.yaw),function(probe)
+	local probes=EscapeRules.probes(record.position.X,record.position.Z,threat.X,threat.Z,record.yaw)
+	if goal then
+		for _,probe in probes do probe.score=-Vector2.new(probe.x-goal.X,probe.z-goal.Z).Magnitude end
+		table.sort(probes,function(a,b) return a.score>b.score end)
+	end
+	local chosen=EscapeRules.choose(probes,function(probe)
 		local point=Vector3.new(probe.x,record.position.Y,probe.z)
+		if goal and Vector2.new(point.X-goal.X,point.Z-goal.Z).Magnitude>=Vector2.new(record.position.X-goal.X,record.position.Z-goal.Z).Magnitude-0.5 then return false end
 		if not within(point) or not World.canRoam(self.world,record.position,point,scale) then return false end
 		-- Sweep across dry ground / real water as well as walls. Characters are
 		-- excluded so standing on the animal cannot pin its navigation in place.
@@ -158,20 +170,25 @@ end
 function Wildlife:start()
 	local function replenish()
 		local active = self.rules.eventWindow(os.time(), self.preview).active
+		local cycleState=self.cycle:state(); local night=cycleState.night
 		for model, record in self.records do
 			if self.catalog.Species[record.id].eventOnly and not active then record.alive = false; self.records[model] = nil; model:Destroy() end
 		end
 		for _, zone in self.world.zones do
-			local ordinary, special = 0, 0
+			local ordinary, special, predators = 0, 0, 0
 			for _, record in self.records do
 				if record.zone == zone then
-					if self.catalog.Species[record.id].eventOnly then special += 1 else ordinary += 1 end
+					if self.catalog.Species[record.id].nightOnly then predators+=1 elseif self.catalog.Species[record.id].eventOnly then special += 1 else ordinary += 1 end
 				end
 			end
 			for _ = ordinary + 1, zone.count do
 				local id = self:choose(zone); if id then self:spawn(zone, id) end
 			end
 			if active and zone.event then for _ = special + 1, 2 do self:spawn(zone, "auroraRay") end end
+			local predator=zone.id and self.catalog.NightHabitats[(zone.mapId or "ark")..":"..zone.id]
+			if predator and NightRules.canSpawn(cycleState,self.nightSpawns[zone],predators) then
+				if self:spawn(zone,predator) then self.nightSpawns[zone]=cycleState.id end
+			end
 		end
 	end
 	Players.PlayerRemoving:Connect(function(player) for _, record in self.records do record.holds[player]=nil end end)
@@ -184,7 +201,18 @@ function Wildlife:start()
 		local now = os.clock()
 		for model, record in self.records do
 			local species = self.catalog.Species[record.id]
+			if species.nightOnly and not self.cycle:state().night then record.alive=false; self.records[model]=nil; model:Destroy(); continue end
 			local behavior = record.behavior
+			local hunting,windup=nil,false
+			if species.dangerous then
+				hunting,windup=self.hazards:step(record,now)
+				if windup then record.path={}; record.waypoint=1
+				elseif hunting and now>=(record.nextHunt or 0) then
+					record.routeVersion+=1; record.nextHunt=now+0.6
+					local point=self:escapePoint(record,record.position*2-hunting,hunting)
+					record.path=if point then {point} else {}; record.waypoint=1
+				end
+			end
 			if behavior.alert>0 and now >= record.restUntil and now >= record.snaredUntil then
 				for _, player in Players:GetPlayers() do
 					local char=player.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); local hum=char and char:FindFirstChildOfClass("Humanoid")
@@ -200,7 +228,7 @@ function Wildlife:start()
 				local c=record.pursuer and record.pursuer.Character; local root=c and c:FindFirstChild("HumanoidRootPart")
 				self:planEscape(record,if root then root.Position else record.threat)
 			end
-			if condition=="calm" and now >= record.nextMove and not record.pending and record.waypoint > #record.path then
+			if condition=="calm" and not hunting and not windup and now >= record.nextMove and not record.pending and record.waypoint > #record.path then
 				self:planMove(record); record.nextMove = now + self.random:NextNumber(8, 16)
 			end
 			local moving = false
@@ -208,7 +236,7 @@ function Wildlife:start()
 			if target and condition~="snared" then
 				local delta = target - record.position
 				local scale = self.catalog.Species[record.id].scale
-				local step = math.min(delta.Magnitude, interval * (if condition=="fleeing" and behavior then behavior.speed else math.min(7, scale * 4)))
+				local step = math.min(delta.Magnitude, interval * (if hunting then self.catalog.NightAttacks[record.id].speed elseif condition=="fleeing" and behavior then behavior.speed else math.min(7, scale * 4)))
 				if delta.Magnitude < 0.3 then record.waypoint += 1
 				elseif World.canRoam(self.world, record.position, record.position + delta.Unit * step, scale) then
 					record.position += delta.Unit * step; record.yaw = math.atan2(-delta.X, -delta.Z); moving = true
@@ -217,8 +245,10 @@ function Wildlife:start()
 			local lift = EncounterRules.flight(if behavior then behavior.mode else "run",now,record.fleeStarted,record.fleeUntil)
 			if condition=="snared" or not World.canRoam(self.world,record.position,record.position+Vector3.new(0,lift,0),species.scale) then lift=0 end
 			record.flightHeight=lift; record.prompt.Enabled=lift<=2 and now>=record.retryUntil
-			record.prompt.ActionText=if condition=="snared" then "Rescue snared animal" elseif condition=="fleeing" then "Rescue fleeing animal" else "Rescue animal"
-			model:PivotTo(CFrame.new(record.position + Vector3.new(0, lift + math.sin(now * 1.8) * 0.12, 0)) * CFrame.Angles(0, record.yaw, 0))
+			record.prompt.ActionText=if species.dangerous then (if now<(record.dangerRestraintUntil or 0) then "Rescue restrained predator • 3×" else "Restrain with tranquilizer / predator snare") elseif condition=="snared" then "Rescue snared animal" elseif condition=="fleeing" then "Rescue fleeing animal" else "Rescue animal"
+			local lunge=Vector3.zero
+			if now<(record.attackLungeUntil or 0) then lunge=Vector3.new(-math.sin(record.yaw),0,-math.cos(record.yaw))*math.sin((record.attackLungeUntil-now)/0.35*math.pi)*1.5 end
+			model:PivotTo(CFrame.new(record.position + lunge + Vector3.new(0, lift + math.sin(now * 1.8) * 0.12, 0)) * CFrame.Angles(0, record.yaw, 0))
 			AnimalModels.animate(record.rig, record.root.CFrame, now, moving or lift>0, record.zone.marine)
 		end
 	end)
