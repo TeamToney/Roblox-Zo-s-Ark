@@ -71,8 +71,8 @@ The forest is scenery; it does not block running animals or rescue checks.
 
 NIGHT EXPEDITIONS & CASH-REGISTER CHIMES
 Successful captures and positive chest finds now ring with a short chi-ching.
-The sky cycles through 8 minutes of day and 4 minutes of night.
-A fresh server begins at noon; its first night arrives in about four minutes.
+The sky cycles through 20 minutes of day and 5 minutes of night.
+A fresh server begins at dawn; its first night arrives after a full 20 minutes.
 Night captures give 2x capture coins/points; dangerous predators give 3x.
 Boars, panthers and sharks appear at night and can take points and health.
 Rest safely near the Ark or checkpoints. Dawn removes night predators.
@@ -84,3 +84,11 @@ V - night vision: permanent upgrade, works after dark without battery use.
 Predators must be sedated or held by the reinforced snare before capture.
 Normal rescue-tier, water-gear and pack limits still apply. Use darts for sharks.
 All actions also have Field Kit buttons for touch/controller.
+
+MOVING TREASURE & WILDLIFE
+Eight chests and four wrapped surprise gifts start in random suitable locations.
+They move again about every five minutes, or shortly after opening, once everyone
+is at least 70 studs away. Moving never resets a find's daily opening limit.
+Your opened finds show OPENED TODAY until midnight UTC.
+Animals choose new compatible habitats when spawning and roam more frequently.
+Rarity, island access, hidden habitats and event locations keep their rules.

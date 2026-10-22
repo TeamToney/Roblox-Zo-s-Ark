@@ -71,19 +71,21 @@ local function buildStage(scene,data)
 		glow.Material=Enum.Material.Neon
 	end
 	scene.chest=make("Model",{Name="CinematicChest"},scene.world)
-	local wood=Color3.fromRGB(167,94,43); local gold=colors[2]
-	local body=part(scene.chest,"ChestBody",Vector3.new(8,4.8,6),CFrame.new(0,2.4,0),wood); body.Material=Enum.Material.WoodPlanks; scene.chest.PrimaryPart=body
+	local wood=if data.gift then Color3.fromRGB(160,87,235) else Color3.fromRGB(167,94,43); local gold=colors[2]
+	local material=if data.gift then Enum.Material.SmoothPlastic else Enum.Material.WoodPlanks
+	local body=part(scene.chest,"ChestBody",Vector3.new(8,4.8,6),CFrame.new(0,2.4,0),wood); body.Material=material; scene.chest.PrimaryPart=body
 	for _,x in {-2.6,2.6} do part(scene.chest,"GoldBand",Vector3.new(0.4,4.9,6.1),CFrame.new(x,2.4,0),gold).Material=Enum.Material.Metal end
 	part(scene.chest,"ChestLock",Vector3.new(1.1,1.3,0.45),CFrame.new(0,4,-3.2),gold)
 	scene.lid=make("Model",{Name="OpeningLid"},scene.chest)
 	local hinge=part(scene.lid,"LidHinge",Vector3.one*0.1,CFrame.new(0,4.8,3),wood); hinge.Transparency=1; scene.lid.PrimaryPart=hinge
-	part(scene.lid,"Lid",Vector3.new(8.3,0.9,6.3),CFrame.new(0,5.25,0),wood).Material=Enum.Material.WoodPlanks
+	part(scene.lid,"Lid",Vector3.new(8.3,0.9,6.3),CFrame.new(0,5.25,0),wood).Material=material
 	for _,x in {-2.6,2.6} do part(scene.lid,"LidBand",Vector3.new(0.4,1,6.4),CFrame.new(x,5.25,0),gold).Material=Enum.Material.Metal end
+	if data.gift then for _,x in {-1,1} do part(scene.lid,"GiftBow",Vector3.new(2.3,1,1.7),CFrame.new(x,6,0),gold,Enum.PartType.Ball) end end
 	buildReward(scene,data)
 	make("Frame",{BackgroundColor3=Color3.new(),BorderSizePixel=0,Size=UDim2.new(1,0,0.105,0),ZIndex=3},backdrop)
 	make("Frame",{BackgroundColor3=Color3.new(),BorderSizePixel=0,Position=UDim2.fromScale(0,0.77),Size=UDim2.fromScale(1,0.23),ZIndex=3},backdrop)
 	scene.title=text(backdrop,"A MYSTERY AWAITS…",28,UDim2.fromScale(0.1,0.015),UDim2.fromScale(0.8,0.075),accent)
-	scene.caption=text(backdrop,"Opening your surprise chest",18,UDim2.fromScale(0.08,0.79),UDim2.fromScale(0.84,0.07))
+	scene.caption=text(backdrop,if data.gift then "Unwrapping your surprise gift" else "Opening your surprise chest",18,UDim2.fromScale(0.08,0.79),UDim2.fromScale(0.84,0.07))
 	scene.message=text(backdrop,"",14,UDim2.fromScale(0.08,0.86),UDim2.fromScale(0.84,0.075))
 	scene.message.TextScaled=true; make("UITextSizeConstraint",{MinTextSize=10,MaxTextSize=14},scene.message)
 	local skip=make("TextButton",{Name="SkipChestScene",Text="SKIP  •  Space / Esc",Font=Enum.Font.GothamBold,TextSize=13,TextColor3=Color3.new(1,1,1),BackgroundColor3=Color3.fromRGB(28,52,77),BorderSizePixel=0,AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-18,1,-10),Size=UDim2.fromOffset(185,32),ZIndex=6,Modal=true,Selectable=true},backdrop)

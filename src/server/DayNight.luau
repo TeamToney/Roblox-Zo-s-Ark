@@ -4,7 +4,7 @@ local RunService=game:GetService("RunService")
 local Rules=require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").NightRules)
 local DayNight={}; DayNight.__index=DayNight
 function DayNight.new(world,config)
-	local initial=if RunService:IsStudio() and workspace:GetAttribute("ZoPreviewNight")==true then 600 else config.CycleStartPhase
+	local initial=if RunService:IsStudio() and workspace:GetAttribute("ZoPreviewNight")==true then config.DaySeconds+(config.CycleSeconds-config.DaySeconds)/2 else config.CycleStartPhase
 	local epoch=workspace:GetServerTimeNow()-initial
 	workspace:SetAttribute("ZoDayEpoch",epoch)
 	return setmetatable({world=world,config=config,epoch=epoch},DayNight)

@@ -9,6 +9,7 @@ local IslandWorld = require(script.Parent.IslandWorld)
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("ZoShared")
 local Geometry = require(Shared.MapGeometry)
 local Seaways = require(Shared.SeawayLayout)
+local Locations = require(Shared.EncounterLocations)
 
 local World = {}
 local C = {
@@ -93,7 +94,16 @@ function World.build(config)
 				end
 			end
 			for _, cp in plan.Checkpoints do table.insert(self.checkpointSpots, {id = cp.id, position = position(cp.x, cp.y, plan.FloorY + 0.2)}) end
-			for _, chest in plan.Chests do table.insert(self.chestSpots, {id = chest.id, mapId = plan.Id, position = position(chest.x, chest.y, if chest.marine then plan.WaterY else plan.FloorY + 0.2)}) end
+			for _, chest in plan.Chests do table.insert(self.chestSpots, {id = chest.id, mapId = plan.Id, marine=chest.marine==true,plan=plan,position = position(chest.x, chest.y, if chest.marine then plan.WaterY else plan.FloorY + 0.2)}) end
+		end
+	end
+	self.spawnHomes=table.clone(self.zones)
+	for index,zone in self.zones do zone.key=(zone.mapId or "ark")..":zone:"..(zone.id or tostring(index)) end
+	for _,plan in self.plans do
+		for _,region in Locations.extraHabitats(plan,Geometry) do
+			local a,b=region.rect,plan.Source
+			local x1,z1=Geometry.world(b,a[1],a[2]); local x2,z2=Geometry.world(b,a[3],a[4])
+			table.insert(self.spawnHomes,{key=region.key,id=region.key,name="Roaming woodland",mapId=plan.Id,habitat=region.habitat,marine=false,obscure=false,center=Vector3.new((x1+x2)/2,plan.FloorY,(z1+z2)/2),bounds={minX=x1,maxX=x2,minZ=z1,maxZ=z2},radius=math.min(x2-x1,z2-z1)/2})
 		end
 	end
 	local spawn = Instance.new("SpawnLocation")
@@ -133,7 +143,7 @@ function World.build(config)
 	return self
 end
 
-function World.sample(self, zone, random, scale)
+function World.sample(self, zone, random, scale, avoid, separation)
 	scale = scale or 1
 	local margin = math.max(3, scale * 4.5)
 	if zone.bounds and (zone.bounds.maxX - zone.bounds.minX <= margin * 2 or zone.bounds.maxZ - zone.bounds.minZ <= margin * 2) then return nil end
@@ -150,6 +160,7 @@ function World.sample(self, zone, random, scale)
 			local angle = random:NextNumber(0, math.pi * 2); local radius = math.sqrt(random:NextNumber()) * (zone.radius - margin)
 			position = zone.center + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
 		end
+		if avoid and Vector2.new(position.X-avoid.X,position.Z-avoid.Z).Magnitude<(separation or 12) then continue end
 		if not zone.marine then
 			local hit = workspace:Raycast(position + Vector3.new(0, 120, 0), Vector3.new(0, -240, 0), params)
 			position = if hit and hit.Normal.Y > 0.8 and hit.Position.Y > 3 and math.abs(hit.Position.Y - zone.center.Y) < 12 then hit.Position else nil

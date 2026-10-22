@@ -4,6 +4,7 @@ local MusicPlayer = require(script.Parent.MusicPlayer)
 local MusicView = require(script.Parent.MusicView)
 local RewardAudio=require(script.Parent.RewardAudio)
 local NightGear=require(script.Parent.NightGear)
+local lootStatus=require(script.Parent.LootStatus).new()
 local GuiService = game:GetService("GuiService")
 local CurrencyHUD = require(script.Parent.CurrencyHUD)
 local TravelView = require(script.Parent.TravelView)
@@ -312,7 +313,7 @@ local function guide()
 	section("03  /  Prepare an expedition", "Buy the Ranger Net for larger animals. A Reef Snorkel opens more sea encounters. Rescue and water gear are automatic. Buy with coins or points; open Field Kit to activate supplies and equip cosmetics.", 126)
 	section("04  /  Sail beyond the base", if hybrid then "Tidewater Hall is in the northeast. Descend the boarding steps in its southern pool to reach a free boat, then sail through the eastern sea gate. Swim or sail close to marine animals." else "Find your world's expedition dock and borrow a free boat. Sit to steer and jump to leave. Swim or sail close to marine animals to rescue them.", 148)
 	section("05  /  Follow the Aurora Tide", "An eight-minute event returns every thirty minutes. Rescue three Aurora Mantas at the reef, then claim a special title and bonus rewards on the expedition board.", 126)
-	section("06  /  After dark", "The sky cycles through 8 minutes of day and 4 minutes of night. Night capture coins/points pay 2×; night predators pay 3×. Watch for boars, panthers and sharks! Buy flashlight cells (F), night vision (V), a tranquilizer (4) or a 3-minute Predator Rescue Snare (5). Sedate or restrain predators before rescuing them. The Ark and checkpoints are safe resting areas.", 204)
+	section("06  /  After dark", "The sky cycles through 20 minutes of day and 5 minutes of night. Night capture coins/points pay 2×; night predators pay 3×. Watch for boars, panthers and sharks! Buy flashlight cells (F), night vision (V), a tranquilizer (4) or a 3-minute Predator Rescue Snare (5). Sedate or restrain predators before rescuing them. The Ark and checkpoints are safe resting areas.", 204)
 	local checkpoint = Catalog.Checkpoints[state.respawnCheckpoint]
 	section("Island access & checkpoints", "Open Travel to unlock Canopy Reach or Moonstone Isle with coins, points or configured Robux offers. Then sail there or buy a teleport. Activate checkpoints to save your respawn, then finish island challenges on the expedition board. Current respawn: " .. (if checkpoint then checkpoint.name else "Ark southern entrance") .. ".", 155)
 	section("Surprise chests", "Each chest is free to open once per explorer per UTC day. Find coins, hidden animals, gear, sprint boosts or snares; some chests trap you, remove points or kill your character. Death returns you to your checkpoint. Your collected animals and gear stay.", 160)
@@ -326,6 +327,7 @@ end
 
 render = function()
 	if not state then return end
+	lootStatus.update(state.profile)
 	local oldPosition = scroll.CanvasPosition
 	wallet:update(state.profile.coins,state.profile.points)
 	subtitle.Text = (if state.profile.titles[Config.EventTitle] then "AURORA VOYAGER" else "LEVEL "..state.level)..(if state.temporary then " • SESSION" else " • EXPLORER")
@@ -420,6 +422,7 @@ end)
 script.Destroying:Connect(function() music:destroy() end)
 local stopNightGear=NightGear.start(player)
 script.Destroying:Connect(stopNightGear)
+script.Destroying:Connect(lootStatus.destroy)
 send = function(verb, id, amount, currency)
 	if requestBusy then return end
 	requestBusy = true

@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local EncounterRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EncounterRules)
 local EscapeRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EscapeRules)
 local NightRules = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").NightRules)
+local Locations = require(game:GetService("ReplicatedStorage"):WaitForChild("ZoShared").EncounterLocations)
 local RunService = game:GetService("RunService")
 local World = require(script.Parent.World)
 local AnimalModels = require(script.Parent.AnimalModels)
@@ -12,7 +13,7 @@ local Wildlife = {}
 Wildlife.__index = Wildlife
 
 function Wildlife.new(world, catalog, rules, onCapture, preview, getOwned, cycle, hazards)
-	return setmetatable({world = world, catalog = catalog, rules = rules, onCapture = onCapture, preview = preview, random = Random.new(), records = {}, routing = 0, getOwned = getOwned,cycle=cycle,hazards=hazards,nightSpawns={}}, Wildlife)
+	return setmetatable({world = world, catalog = catalog, rules = rules, onCapture = onCapture, preview = preview, random = Random.new(), records = {}, routing = 0, getOwned = getOwned,cycle=cycle,hazards=hazards,nightSpawns={},lastHomes={},lastSpawns={}}, Wildlife)
 end
 
 function Wildlife:choose(zone)
@@ -21,8 +22,23 @@ end
 
 function Wildlife:spawn(zone, id)
 	local species = self.catalog.Species[id]
-	local position = World.sample(self.world, zone, self.random, species.scale)
+	local populationZone=zone
+	local homes=Locations.order(Locations.animalHomes(self.world.spawnHomes,zone,species),self.lastHomes[zone],self.random:NextNumber())
+	local position=nil
+	for index,home in homes do
+		if index>8 then break end
+		local candidate=World.sample(self.world,home,self.random,species.scale,self.lastSpawns[populationZone],10)
+		if candidate then
+			local clear=true
+			for _,record in self.records do
+				local other=self.catalog.Species[record.id]
+				if Vector2.new(candidate.X-record.position.X,candidate.Z-record.position.Z).Magnitude<math.max(6,(other.scale+species.scale)*2) then clear=false; break end
+			end
+			if clear then position=candidate; zone=home; break end
+		end
+	end
 	if not position then return end
+	self.lastHomes[populationZone]=zone.key; self.lastSpawns[populationZone]=position
 	local model = Instance.new("Model"); model.Name = species.name
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	local scale = species.scale
@@ -41,7 +57,7 @@ function Wildlife:spawn(zone, id)
 	prompt.MaxActivationDistance = 12; prompt.HoldDuration = EncounterRules.holdTime(self.world.config.CaptureHold,self.catalog.Rarities[species.rarity].rank)
 	prompt.RequiresLineOfSight = true; prompt.Parent = root
 	model:SetAttribute("SpeciesId", id); model:SetAttribute("Dangerous",species.dangerous==true); model.Parent = self.world.actors
-	local record = {behavior=EscapeRules.behavior(self.catalog,id,zone.marine), routeVersion=0, nextEscapePlan=0, holds = {}, retryUntil = 0, prompt = prompt, fleeUntil = 0, fleeStarted = 0, restUntil = 0, snaredUntil = 0, flightHeight = 0, model = model, root = root, rig = rig, zone = zone, id = id, alive = true, busy = false, position = root.Position, path = {}, waypoint = 1, nextMove = os.clock() + self.random:NextNumber(3, 7), yaw = self.random:NextNumber(0, math.pi * 2)}
+	local record = {behavior=EscapeRules.behavior(self.catalog,id,zone.marine), routeVersion=0, nextEscapePlan=0, holds = {}, retryUntil = 0, prompt = prompt, fleeUntil = 0, fleeStarted = 0, restUntil = 0, snaredUntil = 0, flightHeight = 0, model = model, root = root, rig = rig, zone = zone,populationZone=populationZone, id = id, alive = true, busy = false, position = root.Position, path = {}, waypoint = 1, nextMove = os.clock() + self.random:NextNumber(1, 3), yaw = self.random:NextNumber(0, math.pi * 2)}
 	self.records[model] = record
 	prompt.PromptButtonHoldBegan:Connect(function(player)
 		local c=player.Character; local body=c and c:FindFirstChild("HumanoidRootPart"); local h=c and c:FindFirstChildOfClass("Humanoid")
@@ -175,12 +191,8 @@ function Wildlife:start()
 			if self.catalog.Species[record.id].eventOnly and not active then record.alive = false; self.records[model] = nil; model:Destroy() end
 		end
 		for _, zone in self.world.zones do
-			local ordinary, special, predators = 0, 0, 0
-			for _, record in self.records do
-				if record.zone == zone then
-					if self.catalog.Species[record.id].nightOnly then predators+=1 elseif self.catalog.Species[record.id].eventOnly then special += 1 else ordinary += 1 end
-				end
-			end
+			local count=Locations.population(self.catalog,self.records,zone)
+			local ordinary,special,predators=count.ordinary,count.special,count.predators
 			for _ = ordinary + 1, zone.count do
 				local id = self:choose(zone); if id then self:spawn(zone, id) end
 			end
@@ -229,7 +241,7 @@ function Wildlife:start()
 				self:planEscape(record,if root then root.Position else record.threat)
 			end
 			if condition=="calm" and not hunting and not windup and now >= record.nextMove and not record.pending and record.waypoint > #record.path then
-				self:planMove(record); record.nextMove = now + self.random:NextNumber(8, 16)
+				self:planMove(record); record.nextMove = now + self.random:NextNumber(3, 7)
 			end
 			local moving = false
 			local target = record.path[record.waypoint]
